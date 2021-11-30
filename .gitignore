@@ -17,3 +17,4 @@
 *.ecore
 *.genmodel
 *.DS_STORE
+**/bin/**
