@@ -3,7 +3,6 @@
 *.mwe2
 *.xml
 *.properties
-*.txt
 **/.metadata/**
 *.prefs
 *.classpath
