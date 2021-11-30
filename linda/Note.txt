@@ -1,0 +1,10 @@
+Spécification :
+ - pour stocker les tuples : on choisit une array
+ 
+ -> priorité read/write sur take 
+ -> priorité read sur write 
+ - pour take : 
+    (1) plusieurs tuples correspondent au motif => on renvoie le premier tupple qu'on trouve
+    (2) plusieurs take en attentes => le plus anciens (on travaille en fifo)
+    (3) un take et un read et dépôt qui débloque => on débloque tous les read
+    
