@@ -37,7 +37,7 @@ public class CentralizedLinda implements Linda {
     }
 
     public void write(Tuple t) {
-    	if(!((nbReaders==0)&&(!taker)&&(((ReentrantLock) this.monitor).getWaitQueueLength(this.RPossible) == 0)&& !writer) ) {
+    	if (! ((nbReaders == 0) && (! taker) && (((ReentrantLock) this.monitor).getWaitQueueLength(this.RPossible) == 0) && (! writer))) {
     		WPossible.await();
     	}
     	writer = true;
@@ -69,7 +69,7 @@ public class CentralizedLinda implements Linda {
   
     
     public Tuple tryRead(Tuple t) {
-    	if(!(!writer && !taker)) {
+    	if (! ((! writer) && (! taker))) {
     		RPossible.await();
     	}
     	
@@ -93,7 +93,9 @@ public class CentralizedLinda implements Linda {
     
     public Tuple take(Tuple t) {
     	
-    	if(!((nbReaders==0)&&(!taker)&&(((ReentrantLock) this.monitor).getWaitQueueLength(this.WPossible) == 0)&&(((ReentrantLock) this.monitor).getWaitQueueLength(this.RPossible) == 0)&& !writer) ) {
+    	if (! ((nbReaders == 0) && (! taker) && 
+    			(((ReentrantLock) this.monitor).getWaitQueueLength(this.WPossible) == 0) && 
+    			(((ReentrantLock) this.monitor).getWaitQueueLength(this.RPossible) == 0) && (! writer))) {
     		TPossible.await();
     	}
     	take =  true;
@@ -112,7 +114,9 @@ public class CentralizedLinda implements Linda {
     
     public Tuple tryTake(Tuple t) {
     	
-    	if(!((nbReaders==0)&&(!taker)&&(((ReentrantLock) this.monitor).getWaitQueueLength(this.WPossible) == 0)&&(((ReentrantLock) this.monitor).getWaitQueueLength(this.RPossible) == 0)&& !writer) ) {
+    	if (! ((nbReaders == 0) && (! taker) && 
+    			(((ReentrantLock) this.monitor).getWaitQueueLength(this.WPossible) == 0) && 
+    			(((ReentrantLock) this.monitor).getWaitQueueLength(this.RPossible) == 0) && (! writer)) ) {
     		TPossible.await();
     	}
     	
