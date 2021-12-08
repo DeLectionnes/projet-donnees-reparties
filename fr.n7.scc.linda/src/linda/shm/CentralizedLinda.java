@@ -1,7 +1,9 @@
 package linda.shm;
 
+import java.util.ArrayList;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import linda.Callback;
 import linda.Linda;
@@ -46,7 +48,7 @@ public class CentralizedLinda implements Linda {
     }
     
     public Tuple Read(Tuple t) {
-    	if(!(!writer && !taker)) {
+    	if (! ((! writer) && (! taker))) {
     		RPossible.await();
     	}
     	
@@ -54,10 +56,10 @@ public class CentralizedLinda implements Linda {
 
     	Tuple t_read;
     	
-    	while(true) {	
-	    	for(tuple:TSpaces) {
+    	while (true) {	
+	    	for(Tuple tuple : TSpaces) {
 	    		if(tuple.matches(t)) {
-	    			t_read = t.deepcopy();
+	    			t_read = t.deepclone();
 	    			break;
 	    		}
 	    	}
@@ -77,9 +79,9 @@ public class CentralizedLinda implements Linda {
     	
     	Tuple t_read;
     	
-    	for(tuple:TSpaces) {
+    	for(Tuple tuple : TSpaces) {
     		if(tuple.matches(t)) {
-    			t_read = t.deepcopy();
+    			t_read = t.deepclone();
     			return t_read;
     		}
     	}
@@ -101,9 +103,9 @@ public class CentralizedLinda implements Linda {
     	take =  true;
     	Tuple t_take;
     	while(true) {
-	    	for(tuple:TSpaces) {
+	    	for(Tuple tuple : TSpaces) {
 	    		if(tuple.matches(t)) {
-	    			t_take = t.deepcopy();
+	    			t_take = t.deepclone();
 	    			boolean b = TSpaces.remove(tuple);
 	    			break;
 	    		}
@@ -122,9 +124,9 @@ public class CentralizedLinda implements Linda {
     	
     	Tuple t_take;
     	
-    	for(tuple:TSpaces) {
+    	for(Tuple tuple : TSpaces) {
     		if(tuple.matches(t)) {
-    			t_take = t.deepcopy();
+    			t_take = t.deepclone();
     			boolean b = TSpaces.remove(tuple);
     			return t_take;
     		}
@@ -132,6 +134,5 @@ public class CentralizedLinda implements Linda {
     	t_take = null;
     	return t_take;
     }
-    
 
 }
