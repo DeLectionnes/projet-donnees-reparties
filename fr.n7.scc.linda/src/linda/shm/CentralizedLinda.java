@@ -61,7 +61,7 @@ public class CentralizedLinda implements Linda {
     
 	
 	/**
-	 * Reads and returns a tuple if one is already available. Waits for the next write if none are available.
+	 * Reads and returns a tuple if one is already available. Blocks and waits for the next write if none are available.
 	 */
 	/**
 	 *
