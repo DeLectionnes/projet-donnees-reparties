@@ -2,6 +2,7 @@ package linda.shm;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -13,9 +14,9 @@ import linda.Tuple;
 /** Shared memory implementation of Linda. */
 public class CentralizedLinda implements Linda {
 	
-	private boolean writer; 
-	private int nbReaders;
-	private boolean taker;
+	private boolean writerInside; 
+	private int numberReadersInside;
+	private boolean takerInside;
 	
 	private Lock monitor; 
 	
@@ -23,24 +24,29 @@ public class CentralizedLinda implements Linda {
 	private Condition writePossible;
 	private Condition takePossible;
 	
-	private ArrayList<Tuple> TSpaces; 
+	private List<Tuple> tupleSpaces; 
 	
+    /**
+     * 
+     */
     public CentralizedLinda() {
     	this.monitor = new java.util.concurrent.locks.ReentrantLock();
     	
-    	this.writer = false; 
-    	this.nbReaders = 0;
-    	this.taker = false;
+    	
+    	this.writerInside = false; 
+    	this.numberReadersInside = 0;
+    	this.takerInside = false;
     	
     	this.writePossible = monitor.newCondition();
     	this.readPossible = monitor.newCondition();
     	this.takePossible = monitor.newCondition();
     	
-    	this.TSpaces = new ArrayList<Tuple>();
+    	this.tupleSpaces = new ArrayList<Tuple>();
     }
-
+    
+	@Override
     public void write(Tuple t) {
-    	if (! ((nbReaders == 0) && (! taker) && (((ReentrantLock) this.monitor).getWaitQueueLength(this.readPossible) == 0) && (! writer))) {
+    	if (! ((numberReadersInside == 0) && (! takerInside) && (((ReentrantLock) this.monitor).getWaitQueueLength(this.readPossible) == 0) && (! writerInside))) {
     		try {
 				writePossible.await();
 			} catch (InterruptedException e) {
@@ -48,13 +54,21 @@ public class CentralizedLinda implements Linda {
 				e.printStackTrace();
 			}
     	}
-    	writer = true;
-    	TSpaces.add(t);
-    	writer = false;
+    	writerInside = true;
+    	tupleSpaces.add(t);
+    	writerInside = false;
     }
     
-    public Tuple Read(Tuple t) {
-    	if (! ((! writer) && (! taker))) {
+	
+	/**
+	 * Reads and returns a tuple if one is already available. Waits for the next write if none are available.
+	 */
+	/**
+	 *
+	 */
+	@Override
+	public Tuple read(Tuple t) {
+    	if (! ((! writerInside) && (! takerInside))) {
     		try {
 				readPossible.await();
 			} catch (InterruptedException e) {
@@ -63,12 +77,12 @@ public class CentralizedLinda implements Linda {
 			}
     	}
     	
-    	nbReaders += 1;
+    	numberReadersInside += 1;
 
     	Tuple t_read = null;
     	
     	while (t_read == null) {	
-	    	for(Tuple tuple : TSpaces) {
+	    	for(Tuple tuple : tupleSpaces) {
 	    		if (tuple.matches(t)) {
 	    			t_read = t.deepclone();
 	    			break;
@@ -76,13 +90,16 @@ public class CentralizedLinda implements Linda {
 	    	}
     	}
     	
-    	nbReaders -= 1;
+    	numberReadersInside -= 1;
     	return t_read;
     }
   
-    
+	/**
+	 *
+	 */
+	@Override
     public Tuple tryRead(Tuple t) {
-    	if (! ((! writer) && (! taker))) {
+    	if (! ((! writerInside) && (! takerInside))) {
     		try {
 				readPossible.await();
 			} catch (InterruptedException e) {
@@ -91,11 +108,11 @@ public class CentralizedLinda implements Linda {
 			}
     	}
     	
-    	nbReaders += 1;
+    	numberReadersInside += 1;
     	
     	Tuple t_read;
     	
-    	for(Tuple tuple : TSpaces) {
+    	for(Tuple tuple : tupleSpaces) {
     		if(tuple.matches(t)) {
     			t_read = t.deepclone();
     			return t_read;
@@ -104,16 +121,19 @@ public class CentralizedLinda implements Linda {
     	
     	t_read = null;
     	
-    	nbReaders -= 1;
+    	numberReadersInside -= 1;
     	return t_read;
     }
      
-    
+	/**
+	 *
+	 */
+	@Override
     public Tuple take(Tuple t) {
     	
-    	if (! ((nbReaders == 0) && (! this.taker) && 
+    	if (! ((numberReadersInside == 0) && (! this.takerInside) && 
     			(((ReentrantLock) this.monitor).getWaitQueueLength(this.writePossible) == 0) && 
-    			(((ReentrantLock) this.monitor).getWaitQueueLength(this.readPossible) == 0) && (! writer))) {
+    			(((ReentrantLock) this.monitor).getWaitQueueLength(this.readPossible) == 0) && (! writerInside))) {
     		try {
 				takePossible.await();
 			} catch (InterruptedException e) {
@@ -121,25 +141,26 @@ public class CentralizedLinda implements Linda {
 				e.printStackTrace();
 			}
     	}
-    	this.taker =  true;
+    	this.takerInside =  true;
     	Tuple t_take = null;
     	while (t_take == null) {
-	    	for(Tuple tuple : TSpaces) {
+	    	for(Tuple tuple : tupleSpaces) {
 	    		if(tuple.matches(t)) {
 	    			t_take = t.deepclone();
-	    			boolean b = TSpaces.remove(tuple);
+	    			boolean b = tupleSpaces.remove(tuple);
 	    			break;
 	    		}
 	    	}
     	}
     	return t_take;
     }
-    
+
+	@Override
     public Tuple tryTake(Tuple t) {
     	
-    	if (! ((nbReaders == 0) && (! this.taker) && 
+    	if (! ((numberReadersInside == 0) && (! this.takerInside) && 
     			(((ReentrantLock) this.monitor).getWaitQueueLength(this.writePossible) == 0) && 
-    			(((ReentrantLock) this.monitor).getWaitQueueLength(this.readPossible) == 0) && (! writer)) ) {
+    			(((ReentrantLock) this.monitor).getWaitQueueLength(this.readPossible) == 0) && (! writerInside)) ) {
     		try {
 				takePossible.await();
 			} catch (InterruptedException e) {
@@ -150,22 +171,16 @@ public class CentralizedLinda implements Linda {
     	
     	Tuple t_take;
     	
-    	for(Tuple tuple : TSpaces) {
+    	for(Tuple tuple : tupleSpaces) {
     		if(tuple.matches(t)) {
     			t_take = t.deepclone();
-    			boolean b = TSpaces.remove(tuple);
+    			boolean b = tupleSpaces.remove(tuple);
     			return t_take;
     		}
     	}
     	t_take = null;
     	return t_take;
     }
-
-	@Override
-	public Tuple read(Tuple template) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 	@Override
 	public Collection<Tuple> takeAll(Tuple template) {
