@@ -6,7 +6,7 @@ import linda.Tuple;
 public class CentralizedTestSimple {
 
 	
-	public static void main() {
+	public static void main(String args[]) {
 		final Linda linda = new linda.shm.CentralizedLinda();
 		/*Premier test sur les matchs à longueur de tuple constant*/
 		Tuple t1 = new Tuple(1,2);
