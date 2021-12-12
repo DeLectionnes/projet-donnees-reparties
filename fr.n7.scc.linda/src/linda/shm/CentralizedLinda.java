@@ -14,6 +14,9 @@ import linda.Tuple;
 /** Shared memory implementation of Linda. */
 public class CentralizedLinda implements Linda {
 	
+	/**
+	 * Is a writer currently working on the tuples ?
+	 */
 	private boolean writerInside; 
 	private int numberReadersInside;
 	private boolean takerInside;
