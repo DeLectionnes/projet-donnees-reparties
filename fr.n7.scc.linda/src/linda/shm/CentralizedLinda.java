@@ -12,6 +12,7 @@ import linda.Linda;
 import linda.Tuple;
 
 /** Shared memory implementation of Linda. */
+/* TODO : Improve code sharing. */
 public class CentralizedLinda implements Linda {
 	
 	/**
@@ -57,10 +58,10 @@ public class CentralizedLinda implements Linda {
     	return (((ReentrantLock) this.monitor).getWaitQueueLength(this.readingPossible) != 0);
     }
     
-	private void waitingToRead(Tuple tuple) {
+	private void waitingToRead(Tuple template) {
 		while (! this.canRead()) {
 			try {
-				System.err.println("Read sleeping: " + tuple);
+				System.err.println("Read sleeping: " + template);
 				this.readingPossible.await();
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -69,11 +70,11 @@ public class CentralizedLinda implements Linda {
 		}
 	}
 	
-	private Tuple readOnce(Tuple pattern) {
+	private Tuple readOnce(Tuple template) {
     	Tuple t_read = null;
 		numberReadersInside += 1;
 		for(Tuple tuple : this.tupleSpaces) {
-			if (tuple.matches(pattern)) {
+			if (tuple.matches(template)) {
 				t_read = tuple.deepclone();
 				break;
 			}
@@ -82,11 +83,11 @@ public class CentralizedLinda implements Linda {
 		return t_read;
 	}
 	
-	private Collection<Tuple> readMany(Tuple pattern) {
+	private Collection<Tuple> readMany(Tuple template) {
     	Collection<Tuple> t_read = new ArrayList<Tuple>();
 		numberReadersInside += 1;
 		for(Tuple tuple : this.tupleSpaces) {
-			if (tuple.matches(pattern)) {
+			if (tuple.matches(template)) {
 				t_read.add(tuple.deepclone());
 				break;
 			}
@@ -118,16 +119,18 @@ public class CentralizedLinda implements Linda {
 	 *
 	 */
 	@Override
-	public Tuple read(Tuple t) {
+	public Tuple read(Tuple template) {
     	Tuple t_read = null;
-		System.err.println("Entering read: " + t);
+		System.err.println("Entering read: " + template);
 		this.monitor.lock();
     	do {
-    		this.waitingToRead(t);
-    		t_read = this.readOnce(t);
+    		this.waitingToRead(template);
+    		t_read = this.readOnce(template);
+    		// If it was not possible to read a tuple compatible with the pattern
+    		// sleep until other tuples are written
     		if (t_read == null) {
     			try {
-    				System.err.println("Read sleeping: " + t);
+    				System.err.println("Read sleeping: " + template);
     				this.readingPossible.await();
     			} catch (InterruptedException e) {
     				// TODO Auto-generated catch block
@@ -137,7 +140,7 @@ public class CentralizedLinda implements Linda {
     	} while (t_read == null);
     	this.wakeAfterReading();
     	this.monitor.unlock();
-    	System.err.println("Exiting read:" + t);
+    	System.err.println("Exiting read:" + template);
     	return t_read;
     }
   
@@ -145,14 +148,14 @@ public class CentralizedLinda implements Linda {
 	 *
 	 */
 	@Override
-    public Tuple tryRead(Tuple t) {
-		System.err.println("Entering read: " + t);
+    public Tuple tryRead(Tuple template) {
+		System.err.println("Entering read: " + template);
 		this.monitor.lock();
-		this.waitingToRead(t);
-    	Tuple t_read = this.readOnce(t);
+		this.waitingToRead(template);
+    	Tuple t_read = this.readOnce(template);
     	this.wakeAfterReading();
     	this.monitor.unlock();
-    	System.err.println("Exiting read:" + t);
+    	System.err.println("Exiting read:" + template);
     	return t_read;
     }
 	
@@ -177,10 +180,10 @@ public class CentralizedLinda implements Linda {
     	return (((ReentrantLock) this.monitor).getWaitQueueLength(this.writingPossible) != 0);
     }
     
-    private void waitingToWrite(Tuple tuple) {
+    private void waitingToWrite(Tuple template) {
     	while (! (this.canWrite())) {
     		try {
-    			System.err.println("Write sleeping: " + tuple);
+    			System.err.println("Write sleeping: " + template);
     			this.writingPossible.await();
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -204,16 +207,16 @@ public class CentralizedLinda implements Linda {
     }
     
 	@Override
-    public void write(Tuple t) {
-		System.err.println("Entering write: " + t);
+    public void write(Tuple template) {
+		System.err.println("Entering write: " + template);
 		this.monitor.lock();
-		waitingToWrite(t);
+		waitingToWrite(template);
     	writerInside = true;
-    	tupleSpaces.add(t);
+    	tupleSpaces.add(template);
     	writerInside = false;
     	this.wakeAfterWriting();
     	this.monitor.unlock();
-    	System.err.println("Exiting write:" + t);
+    	System.err.println("Exiting write:" + template);
     }
     
     private boolean canTake() {
@@ -224,10 +227,10 @@ public class CentralizedLinda implements Linda {
     	return (((ReentrantLock) this.monitor).getWaitQueueLength(this.takingPossible) != 0);
     }
 	
-	private void waitingToTake(Tuple tuple) {
+	private void waitingToTake(Tuple template) {
 		while (! this.canTake()) {
 			try {
-				System.err.println("Take sleeping: " + tuple);
+				System.err.println("Take sleeping: " + template);
 				this.takingPossible.await();
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -236,34 +239,34 @@ public class CentralizedLinda implements Linda {
 		}		
 	}
 	
-	private Tuple takeOnce(Tuple pattern) {
+	private Tuple takeOnce(Tuple template) {
 		Tuple t_take = null;
 		this.takerInside =  true;
-		System.err.println("Taker inside: " + pattern);
+		System.err.println("Taker inside: " + template);
 		for(Tuple tuple : this.tupleSpaces) {
-			if(tuple.matches(pattern)) {
+			if(tuple.matches(template)) {
 				t_take = tuple.deepclone();
 				boolean b = this.tupleSpaces.remove(tuple);
 				break;
 			}
 		}
-		System.err.println("Taker outside: " + pattern);
+		System.err.println("Taker outside: " + template);
 		this.takerInside = false;
 		return t_take;
 	}
 	
-	private Collection<Tuple> takeMany(Tuple pattern) {
+	private Collection<Tuple> takeMany(Tuple template) {
 		Collection<Tuple> t_take = new ArrayList<Tuple>();
 		this.takerInside =  true;
-		System.err.println("Taker inside: " + pattern);
+		System.err.println("Taker inside: " + template);
 		for(Tuple tuple : this.tupleSpaces) {
-			if(tuple.matches(pattern)) {
+			if(tuple.matches(template)) {
 				t_take.add(tuple.deepclone());
 				boolean b = this.tupleSpaces.remove(tuple);
 				break;
 			}
 		}
-		System.err.println("Taker outside: " + pattern);
+		System.err.println("Taker outside: " + template);
 		this.takerInside = false;
 		return t_take;
 	}
@@ -286,38 +289,40 @@ public class CentralizedLinda implements Linda {
 	 *
 	 */
 	@Override
-    public Tuple take(Tuple t) {
+    public Tuple take(Tuple template) {
     	Tuple t_take = null;
-		System.err.println("Entering take: " + t);
+		System.err.println("Entering take: " + template);
     	this.monitor.lock();
-    	while (t_take == null) {
-    		this.waitingToTake(t);
-    		t_take = this.takeOnce(t);
+    	do {
+    		this.waitingToTake(template);
+    		t_take = this.takeOnce(template);
+    		// If it was not possible to take a tuple compatible with the pattern
+    		// sleep until other tuples are written
     		if (t_take == null) {
     			try {
-    				System.err.println("Take sleeping: " + t);
+    				System.err.println("Take sleeping: " + template);
     				this.takingPossible.await();
     			} catch (InterruptedException e) {
     				// TODO Auto-generated catch block
     				e.printStackTrace();
     			}
     		}
-    	}
+    	} while (t_take == null);
     	this.wakeAfterTaking();
     	this.monitor.unlock();
-    	System.err.println("Exiting take:" + t);
+    	System.err.println("Exiting take:" + template);
     	return t_take;
     }
 
 	@Override
-    public Tuple tryTake(Tuple t) {
-		System.err.println("Entering try take: " + t);
+    public Tuple tryTake(Tuple template) {
+		System.err.println("Entering try take: " + template);
     	this.monitor.lock();
-    	this.waitingToTake(t);
-    	Tuple t_take = this.takeOnce(t);
+    	this.waitingToTake(template);
+    	Tuple t_take = this.takeOnce(template);
     	this.wakeAfterTaking();
     	this.monitor.unlock();
-    	System.err.println("Exiting try take:" + t);
+    	System.err.println("Exiting try take:" + template);
     	return t_take;
     }
 
