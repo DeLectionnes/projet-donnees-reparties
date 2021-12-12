@@ -2,6 +2,7 @@ package linda.shm;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -13,13 +14,32 @@ import linda.Tuple;
 
 /** Shared memory implementation of Linda. */
 /* TODO : Improve code sharing. */
+/* Maybe rely on callbacks for all actions */
+/* The following tests are currently running correctly:
+ * - BasicTest1
+ * - BasicTest2
+ * - CentralizedTestSimple
+ * - BasicTestAsyncCallback
+ * The following test is currently broken due to concurrent access to triggers iterators :
+ * - BasicTestCallback as it registers an immediate callback from the registered callback.
+ */
 public class CentralizedLinda implements Linda {
 	
 	/**
 	 * Is a writer currently working on the tuples ?
 	 */
 	private boolean writerInside; 
+	
+	
+	/**
+	 * Are there some readers currently working on the tuples ?
+	 */
 	private int numberReadersInside;
+	
+	
+	/**
+	 * Is a taker currently working on the tuples ?
+	 */
 	private boolean takerInside;
 	
 	private Lock monitor; 
@@ -30,7 +50,27 @@ public class CentralizedLinda implements Linda {
 	
 	private List<Tuple> tupleSpaces; 
 	
-	private List<Callback> callbacks;
+	private static class LindaCallBack {
+		private Tuple template;
+		public Tuple getTemplate() {
+			return template;
+		}
+
+		public Callback getCallback() {
+			return callback;
+		}
+
+		private Callback callback;
+		
+		public LindaCallBack(Tuple template, Callback callback) {
+			this.template = template;
+			this.callback = callback;
+		}
+		
+	}
+	
+	private List<LindaCallBack> readers;
+	private List<LindaCallBack> takers;
 	
     /**
      * 
@@ -47,7 +87,8 @@ public class CentralizedLinda implements Linda {
     	this.takingPossible = monitor.newCondition();
     	
     	this.tupleSpaces = new ArrayList<Tuple>();
-    	this.callbacks = new ArrayList<Callback>();
+    	this.readers = new ArrayList<LindaCallBack>();
+    	this.takers = new ArrayList<LindaCallBack>();
     }
     
     private boolean canRead() {
@@ -207,16 +248,17 @@ public class CentralizedLinda implements Linda {
     }
     
 	@Override
-    public void write(Tuple template) {
-		System.err.println("Entering write: " + template);
+    public void write(Tuple tuple) {
+		System.err.println("Entering write: " + tuple);
 		this.monitor.lock();
-		waitingToWrite(template);
+		waitingToWrite(tuple);
     	writerInside = true;
-    	tupleSpaces.add(template);
+    	tupleSpaces.add(tuple);
+    	this.triggers(tuple);
     	writerInside = false;
     	this.wakeAfterWriting();
     	this.monitor.unlock();
-    	System.err.println("Exiting write:" + template);
+    	System.err.println("Exiting write:" + tuple);
     }
     
     private boolean canTake() {
@@ -259,11 +301,12 @@ public class CentralizedLinda implements Linda {
 		Collection<Tuple> t_take = new ArrayList<Tuple>();
 		this.takerInside =  true;
 		System.err.println("Taker inside: " + template);
-		for(Tuple tuple : this.tupleSpaces) {
+		Iterator<Tuple> iterator = this.tupleSpaces.iterator();
+		while (iterator.hasNext()) {
+			Tuple tuple = iterator.next();
 			if(tuple.matches(template)) {
 				t_take.add(tuple.deepclone());
-				boolean b = this.tupleSpaces.remove(tuple);
-				break;
+				iterator.remove();
 			}
 		}
 		System.err.println("Taker outside: " + template);
@@ -341,7 +384,54 @@ public class CentralizedLinda implements Linda {
 	@Override
 	public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) {
 		// TODO Auto-generated method stub
+		System.err.println("Registering an " + mode + " " + timing + " callback on " + template);
+		switch (mode) {
+		case READ:
+			readers.add(new LindaCallBack(template,callback));
+			if (timing == eventTiming.IMMEDIATE) {
+				// TODO: Checks that there are no issues.
+				Collection<Tuple> tuples = this.readMany(template);
+				for (Tuple tuple : tuples) {
+					System.err.println( "Calling an immediate reader callback on " + tuple);
+					callback.call(tuple);
+				}
+			}
+			break;
+		case TAKE:
+			takers.add(new LindaCallBack(template,callback));
+			if (timing == eventTiming.IMMEDIATE) {
+				// TODO: Checks that there are no issues.
+				Collection<Tuple> tuples = this.takeMany(template);
+				for (Tuple tuple : tuples) {
+					System.err.println( "Calling an immediate taker callback on " + tuple);
+					callback.call(tuple);
+				}
+			}
+			break;
+		}
 		
+	}
+	
+	private void triggers(Tuple tuple) {
+		Iterator<LindaCallBack> iterator = this.readers.iterator();
+		while (iterator.hasNext()) {
+			LindaCallBack reader = iterator.next();
+			if (tuple.matches(reader.getTemplate())) {
+				iterator.remove();
+				System.err.println( "Calling a reader callback on " + tuple);
+				reader.getCallback().call(tuple);
+			}
+
+		}
+		iterator = this.takers.iterator();
+		while (iterator.hasNext()) {
+			LindaCallBack taker = iterator.next();
+			if (tuple.matches(taker.getTemplate())) {
+				iterator.remove();
+				System.err.println( "Calling a reader callback on " + tuple);
+				taker.getCallback().call(tuple);
+			}
+		}
 	}
 
 	@Override
