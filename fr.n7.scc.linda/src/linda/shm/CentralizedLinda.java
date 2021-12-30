@@ -91,7 +91,12 @@ public class CentralizedLinda implements Linda {
     	this.takers = new ArrayList<LindaCallBack>();
     }
     
+    private String getThreadId() {
+    	return Thread.currentThread().getName();
+    }
+    
     private boolean canRead() {
+    	this.debug( "canRead : writer(" + this.writerInside + ") taker(" + this.takerInside + ")");
     	return ((! this.writerInside) && (! this.takerInside));
     }
     
@@ -102,7 +107,7 @@ public class CentralizedLinda implements Linda {
 	private void waitingToRead(Tuple template) {
 		while (! this.canRead()) {
 			try {
-				System.err.println("Read sleeping: " + template);
+				this.debug("Read sleeping: " + template);
 				this.readingPossible.await();
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -162,7 +167,7 @@ public class CentralizedLinda implements Linda {
 	@Override
 	public Tuple read(Tuple template) {
     	Tuple t_read = null;
-		System.err.println("Entering read: " + template);
+		this.debug("Entering read: " + template);
 		this.monitor.lock();
     	do {
     		this.waitingToRead(template);
@@ -171,7 +176,7 @@ public class CentralizedLinda implements Linda {
     		// sleep until other tuples are written
     		if (t_read == null) {
     			try {
-    				System.err.println("Read sleeping: " + template);
+    				this.debug("Read sleeping: " + template);
     				this.readingPossible.await();
     			} catch (InterruptedException e) {
     				// TODO Auto-generated catch block
@@ -181,7 +186,7 @@ public class CentralizedLinda implements Linda {
     	} while (t_read == null);
     	this.wakeAfterReading();
     	this.monitor.unlock();
-    	System.err.println("Exiting read:" + template);
+    	this.debug("Exiting read:" + template);
     	return t_read;
     }
   
@@ -190,30 +195,31 @@ public class CentralizedLinda implements Linda {
 	 */
 	@Override
     public Tuple tryRead(Tuple template) {
-		System.err.println("Entering read: " + template);
+		this.debug("Entering read: " + template);
 		this.monitor.lock();
 		this.waitingToRead(template);
     	Tuple t_read = this.readOnce(template);
     	this.wakeAfterReading();
     	this.monitor.unlock();
-    	System.err.println("Exiting read:" + template);
+    	this.debug("Exiting read:" + template);
     	return t_read;
     }
 	
 	@Override
 	public Collection<Tuple> readAll(Tuple template) {
-		System.err.println("Entering read all: " + template);
+		this.debug("Entering read all: " + template);
 		this.monitor.lock();
 		this.waitingToRead(template);
     	Collection<Tuple> t_read = this.readMany(template);
     	this.wakeAfterReading();
     	this.monitor.unlock();
-    	System.err.println("Exiting read all:" + template);
+    	this.debug("Exiting read all:" + template);
     	return t_read;
 	}
 
     
     private boolean canWrite() {
+    	this.debug( "canWrite : writer(" + this.writerInside + ") taker(" + this.takerInside + ") reader(" + this.numberReadersInside + ")");
     	return ((this.numberReadersInside == 0) && (! this.takerInside) && (! this.writerInside));
     }
     
@@ -224,7 +230,7 @@ public class CentralizedLinda implements Linda {
     private void waitingToWrite(Tuple template) {
     	while (! (this.canWrite())) {
     		try {
-    			System.err.println("Write sleeping: " + template);
+    			this.debug("Write sleeping: " + template);
     			this.writingPossible.await();
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -249,20 +255,25 @@ public class CentralizedLinda implements Linda {
     
 	@Override
     public void write(Tuple tuple) {
-		System.err.println("Entering write: " + tuple);
+		this.debug("Entering write: " + tuple);
 		this.monitor.lock();
 		waitingToWrite(tuple);
     	writerInside = true;
-    	tupleSpaces.add(tuple);
-    	this.triggers(tuple);
+    	// TODO : Should not add if a taker callback is triggered
+    	// Triggers readers and takers (TODO : should remove the tuple) 
+    	if (! this.triggers(tuple)) {
+        	tupleSpaces.add(tuple);
+        	this.wakeAfterWriting();
+    	}
     	writerInside = false;
-    	this.wakeAfterWriting();
+    	
     	this.monitor.unlock();
-    	System.err.println("Exiting write:" + tuple);
+    	this.debug("Exiting write:" + tuple);
     }
     
     private boolean canTake() {
-    	return ((this.numberReadersInside == 0) && (! this.takerInside) && (! writerInside));
+    	this.debug( "canTake : writer(" + this.writerInside + ") taker(" + this.takerInside + ") reader(" + this.numberReadersInside + ")");
+    	return ((this.numberReadersInside == 0) && (! this.takerInside) && (! this.writerInside));
     }
     
     private boolean takerWaiting() {
@@ -272,7 +283,7 @@ public class CentralizedLinda implements Linda {
 	private void waitingToTake(Tuple template) {
 		while (! this.canTake()) {
 			try {
-				System.err.println("Take sleeping: " + template);
+				this.debug("Take sleeping: " + template);
 				this.takingPossible.await();
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -284,7 +295,7 @@ public class CentralizedLinda implements Linda {
 	private Tuple takeOnce(Tuple template) {
 		Tuple t_take = null;
 		this.takerInside =  true;
-		System.err.println("Taker inside: " + template);
+		this.debug("Taker inside: " + template);
 		for(Tuple tuple : this.tupleSpaces) {
 			if(tuple.matches(template)) {
 				t_take = tuple.deepclone();
@@ -292,7 +303,7 @@ public class CentralizedLinda implements Linda {
 				break;
 			}
 		}
-		System.err.println("Taker outside: " + template);
+		this.debug("Taker outside: " + template);
 		this.takerInside = false;
 		return t_take;
 	}
@@ -300,7 +311,7 @@ public class CentralizedLinda implements Linda {
 	private Collection<Tuple> takeMany(Tuple template) {
 		Collection<Tuple> t_take = new ArrayList<Tuple>();
 		this.takerInside =  true;
-		System.err.println("Taker inside: " + template);
+		this.debug("Taker inside: " + template);
 		Iterator<Tuple> iterator = this.tupleSpaces.iterator();
 		while (iterator.hasNext()) {
 			Tuple tuple = iterator.next();
@@ -309,7 +320,7 @@ public class CentralizedLinda implements Linda {
 				iterator.remove();
 			}
 		}
-		System.err.println("Taker outside: " + template);
+		this.debug("Taker outside: " + template);
 		this.takerInside = false;
 		return t_take;
 	}
@@ -334,7 +345,7 @@ public class CentralizedLinda implements Linda {
 	@Override
     public Tuple take(Tuple template) {
     	Tuple t_take = null;
-		System.err.println("Entering take: " + template);
+		this.debug("Entering take: " + template);
     	this.monitor.lock();
     	do {
     		this.waitingToTake(template);
@@ -343,7 +354,7 @@ public class CentralizedLinda implements Linda {
     		// sleep until other tuples are written
     		if (t_take == null) {
     			try {
-    				System.err.println("Take sleeping: " + template);
+    				this.debug("Take sleeping: " + template);
     				this.takingPossible.await();
     			} catch (InterruptedException e) {
     				// TODO Auto-generated catch block
@@ -353,91 +364,118 @@ public class CentralizedLinda implements Linda {
     	} while (t_take == null);
     	this.wakeAfterTaking();
     	this.monitor.unlock();
-    	System.err.println("Exiting take:" + template);
+    	this.debug("Exiting take:" + template);
     	return t_take;
     }
 
 	@Override
     public Tuple tryTake(Tuple template) {
-		System.err.println("Entering try take: " + template);
+		this.debug("Entering try take: " + template);
     	this.monitor.lock();
     	this.waitingToTake(template);
     	Tuple t_take = this.takeOnce(template);
     	this.wakeAfterTaking();
     	this.monitor.unlock();
-    	System.err.println("Exiting try take:" + template);
+    	this.debug("Exiting try take:" + template);
     	return t_take;
     }
 
 	@Override
 	public Collection<Tuple> takeAll(Tuple template) {
-		System.err.println("Entering try take all: " + template);
+		this.debug("Entering try take all: " + template);
     	this.monitor.lock();
     	this.waitingToTake(template);
     	Collection<Tuple> t_take = this.takeMany(template);
     	this.wakeAfterTaking();
     	this.monitor.unlock();
-    	System.err.println("Exiting try take all:" + template);
+    	this.debug("Exiting try take all:" + template);
     	return t_take;
 	}
 
 	@Override
 	public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) {
-		// TODO Auto-generated method stub
-		System.err.println("Registering an " + mode + " " + timing + " callback on " + template);
+		// TODO : We need to protect the readers/takers callback lists
+		// There should only be a single thread inside eventRegister at a time...
+		this.debug("Registering an " + mode + " " + timing + " callback on " + template);
 		switch (mode) {
 		case READ:
-			readers.add(new LindaCallBack(template,callback));
-			if (timing == eventTiming.IMMEDIATE) {
-				// TODO: Checks that there are no issues.
+			if ((timing == eventTiming.IMMEDIATE) && this.canRead()) {
+				// TODO: Should not be able to read if there is a writer/taker inside.
+				// Currently incorrect as it is reading without any synchronisation...
+				// It should make a tryRead...
 				Collection<Tuple> tuples = this.readMany(template);
-				for (Tuple tuple : tuples) {
-					System.err.println( "Calling an immediate reader callback on " + tuple);
-					callback.call(tuple);
+				if (tuples.isEmpty()) {
+					readers.add(new LindaCallBack(template,callback));
+				} else {
+					for (Tuple tuple : tuples) {
+						this.debug( "Calling an immediate reader callback on " + tuple);
+						callback.call(tuple);
+					}
 				}
+			} else {
+				readers.add(new LindaCallBack(template,callback));
 			}
 			break;
 		case TAKE:
-			takers.add(new LindaCallBack(template,callback));
-			if (timing == eventTiming.IMMEDIATE) {
-				// TODO: Checks that there are no issues.
+			if ((timing == eventTiming.IMMEDIATE) && this.canTake()) {
+				// TODO: Should not be able to take if there is a reader/writer/taker inside.
+				// Currently incorrect as it is taking without any synchronisation...
+				// It should make a tryTake...
 				Collection<Tuple> tuples = this.takeMany(template);
-				for (Tuple tuple : tuples) {
-					System.err.println( "Calling an immediate taker callback on " + tuple);
-					callback.call(tuple);
+				if (tuples.isEmpty()) {
+					takers.add(new LindaCallBack(template,callback));
+				} else {
+					for (Tuple tuple : tuples) {
+						this.debug( "Calling an immediate taker callback on " + tuple);
+						callback.call(tuple);
+					}
 				}
+			} else {
+				takers.add(new LindaCallBack(template,callback));
 			}
 			break;
 		}
 		
 	}
 	
-	private void triggers(Tuple tuple) {
+	private boolean triggers(Tuple tuple) {
 		Iterator<LindaCallBack> iterator = this.readers.iterator();
+		List<LindaCallBack> triggered = new ArrayList<LindaCallBack>();
+		
+		// First collects all the reader callbacks
 		while (iterator.hasNext()) {
 			LindaCallBack reader = iterator.next();
 			if (tuple.matches(reader.getTemplate())) {
+				triggered.add(reader);
 				iterator.remove();
-				System.err.println( "Calling a reader callback on " + tuple);
-				reader.getCallback().call(tuple);
 			}
-
 		}
+		// Then execute all the reader callbacks
+		for (LindaCallBack reader : triggered) {
+			this.debug( "Calling a reader callback on " + tuple);
+			reader.getCallback().call(tuple);
+		}
+		boolean taken = false;
+		LindaCallBack taker = null;
 		iterator = this.takers.iterator();
-		while (iterator.hasNext()) {
-			LindaCallBack taker = iterator.next();
+		while (iterator.hasNext() && (! taken)) {
+			taker = iterator.next();
 			if (tuple.matches(taker.getTemplate())) {
+				taken = true;
 				iterator.remove();
-				System.err.println( "Calling a reader callback on " + tuple);
-				taker.getCallback().call(tuple);
 			}
 		}
+		if (taken) {
+			this.debug( "Calling a taker callback on " + tuple);
+			taker.getCallback().call(tuple);
+		}
+		return taken;
 	}
 
 	@Override
-	public void debug(String prefix) {
+	public void debug(String message) {
 		// TODO Auto-generated method stub
-		System.err.println(prefix);
+		System.err.println(this.getThreadId() + " " + message);
 	}
 
 }
