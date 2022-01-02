@@ -243,10 +243,10 @@ public class CentralizedLinda implements Linda {
     public Tuple tryRead(Tuple template) {
 		this.debug("Entering read: " + template);
 		this.monitor.lock();
-		numberReadersInside += 1;
 		this.waitingToRead(template);
-		numberReadersInside -= 1;
+		numberReadersInside += 1;
     	Tuple t_read = this.readOnce(template);
+		numberReadersInside -= 1;
     	this.wakeAfterReading();
     	this.monitor.unlock();
     	this.debug("Exiting read:" + template);
@@ -455,6 +455,10 @@ public class CentralizedLinda implements Linda {
 	}
 
 	@Override
+	/* TODO: Il est possible d'améliorer en distinguant les lectures/prises. En effet, la lecture peut être faite en // avec d'autres lectures.
+	 * Il faut regarder si c'est un IMMEDIATE, puis selon le mode, passer en lecture/prise non bloquante, en cas d'échec ou si ce n'est pas un
+	 * IMMEDIATE, passer en enregistrement.
+	 */
 	public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) {
 		this.monitor.lock();
 		waitingToRegister(template);
