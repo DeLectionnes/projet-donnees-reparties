@@ -18,24 +18,27 @@ import linda.Tuple;
 /* The following tests are currently running correctly:
  * - BasicTest1
  * - BasicTest2
- * - CentralizedTestSimple
+ * - CentralizedTestSimple (I don't know what the expected result is, but no errors are signaled).
  * - BasicTestAsyncCallback
- * The following test is currently broken due to concurrent access to triggers iterators :
- * - BasicTestCallback as it registers an immediate callback from the registered callback.
+ * - BasicTestCallback
  */
 public class CentralizedLinda implements Linda {
+	
+	/**
+	 * Is an event being registered ?
+	 */
+	
+	private boolean eventRegisterInside;
 	
 	/**
 	 * Is a writer currently working on the tuples ?
 	 */
 	private boolean writerInside; 
 	
-	
 	/**
 	 * Are there some readers currently working on the tuples ?
 	 */
 	private int numberReadersInside;
-	
 	
 	/**
 	 * Is a taker currently working on the tuples ?
@@ -44,6 +47,7 @@ public class CentralizedLinda implements Linda {
 	
 	private Lock monitor; 
 	
+	private Condition eventRegisteringPossible;
 	private Condition readingPossible;
 	private Condition writingPossible;
 	private Condition takingPossible;
@@ -78,10 +82,12 @@ public class CentralizedLinda implements Linda {
     public CentralizedLinda() {
     	this.monitor = new java.util.concurrent.locks.ReentrantLock();
     	
+    	this.eventRegisterInside = false;
     	this.writerInside = false; 
     	this.numberReadersInside = 0;
     	this.takerInside = false;
     	
+    	this.eventRegisteringPossible = monitor.newCondition();
     	this.writingPossible = monitor.newCondition();
     	this.readingPossible = monitor.newCondition();
     	this.takingPossible = monitor.newCondition();
@@ -95,9 +101,54 @@ public class CentralizedLinda implements Linda {
     	return Thread.currentThread().getName();
     }
     
+    private String getStatus() {
+    	return "register(" + this.eventRegisterInside + ") reader(" + this.numberReadersInside + ") writer(" + this.writerInside + ") taker(" + this.takerInside + ")";
+    }
+    
+    private boolean canRegister() {
+    	this.debug( "canRegister" );
+    	return ((! this.eventRegisterInside) && (this.numberReadersInside == 0) && (! this.writerInside) && (! this.takerInside));
+    }
+    
+    private boolean eventRegisteringWaiting() {
+    	return (((ReentrantLock) this.monitor).getWaitQueueLength(this.eventRegisteringPossible) != 0);
+    }
+    
+	private void waitingToRegister(Tuple template) {
+		while (! this.canRegister()) {
+			try {
+				this.debug("Register sleeping: " + template);
+				this.eventRegisteringPossible.await();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private void wakeAfterRegistering() {
+		if (this.eventRegisteringWaiting()) {
+			this.eventRegisteringPossible.signalAll();
+		} else {
+			if (this.readerWaiting()) {
+				this.readingPossible.signalAll();
+			} else {
+				if (this.numberReadersInside == 0) {
+					if (this.writerWaiting()) {
+						this.writingPossible.signalAll();
+					} else {
+						if (this.takerWaiting()) {
+							this.takingPossible.signalAll();
+						}
+					}
+				}
+			}
+		}
+	}
+    
     private boolean canRead() {
-    	this.debug( "canRead : writer(" + this.writerInside + ") taker(" + this.takerInside + ")");
-    	return ((! this.writerInside) && (! this.takerInside));
+    	this.debug( "canRead" );
+    	return ((! this.eventRegisterInside) && (! this.writerInside) && (! this.takerInside));
     }
     
     private boolean readerWaiting() {
@@ -118,27 +169,23 @@ public class CentralizedLinda implements Linda {
 	
 	private Tuple readOnce(Tuple template) {
     	Tuple t_read = null;
-		numberReadersInside += 1;
 		for(Tuple tuple : this.tupleSpaces) {
 			if (tuple.matches(template)) {
 				t_read = tuple.deepclone();
 				break;
 			}
 		}
-		numberReadersInside -= 1;
 		return t_read;
 	}
 	
 	private Collection<Tuple> readMany(Tuple template) {
     	Collection<Tuple> t_read = new ArrayList<Tuple>();
-		numberReadersInside += 1;
 		for(Tuple tuple : this.tupleSpaces) {
 			if (tuple.matches(template)) {
 				t_read.add(tuple.deepclone());
 				break;
 			}
 		}
-		numberReadersInside -= 1;
 		return t_read;
 	}
 	
@@ -161,9 +208,6 @@ public class CentralizedLinda implements Linda {
 	/**
 	 * Reads and returns a tuple if one is already available. Blocks and waits for the next write if none are available.
 	 */
-	/**
-	 *
-	 */
 	@Override
 	public Tuple read(Tuple template) {
     	Tuple t_read = null;
@@ -171,7 +215,9 @@ public class CentralizedLinda implements Linda {
 		this.monitor.lock();
     	do {
     		this.waitingToRead(template);
+    		numberReadersInside += 1;
     		t_read = this.readOnce(template);
+    		numberReadersInside -= 1;
     		// If it was not possible to read a tuple compatible with the pattern
     		// sleep until other tuples are written
     		if (t_read == null) {
@@ -197,7 +243,9 @@ public class CentralizedLinda implements Linda {
     public Tuple tryRead(Tuple template) {
 		this.debug("Entering read: " + template);
 		this.monitor.lock();
+		numberReadersInside += 1;
 		this.waitingToRead(template);
+		numberReadersInside -= 1;
     	Tuple t_read = this.readOnce(template);
     	this.wakeAfterReading();
     	this.monitor.unlock();
@@ -210,7 +258,9 @@ public class CentralizedLinda implements Linda {
 		this.debug("Entering read all: " + template);
 		this.monitor.lock();
 		this.waitingToRead(template);
+		numberReadersInside += 1;
     	Collection<Tuple> t_read = this.readMany(template);
+		numberReadersInside -= 1;
     	this.wakeAfterReading();
     	this.monitor.unlock();
     	this.debug("Exiting read all:" + template);
@@ -219,8 +269,8 @@ public class CentralizedLinda implements Linda {
 
     
     private boolean canWrite() {
-    	this.debug( "canWrite : writer(" + this.writerInside + ") taker(" + this.takerInside + ") reader(" + this.numberReadersInside + ")");
-    	return ((this.numberReadersInside == 0) && (! this.takerInside) && (! this.writerInside));
+    	this.debug( "canWrite");
+    	return ((! this.eventRegisterInside) && (this.numberReadersInside == 0) && (! this.takerInside) && (! this.writerInside));
     }
     
     private boolean writerWaiting() {
@@ -261,19 +311,33 @@ public class CentralizedLinda implements Linda {
     	writerInside = true;
     	// TODO : Should not add if a taker callback is triggered
     	// Triggers readers and takers (TODO : should remove the tuple) 
-    	if (! this.triggers(tuple)) {
+    	List<LindaCallBack> triggeredReaders = this.triggersReader( tuple );
+    	LindaCallBack trigerredTaker = this.triggersTaker( tuple );
+    	if (trigerredTaker == null) {
         	tupleSpaces.add(tuple);
         	this.wakeAfterWriting();
     	}
     	writerInside = false;
-    	
     	this.monitor.unlock();
+    	this.debug("Execute triggered readers: " + tuple);
+		// Then execute all the reader callbacks
+		for (LindaCallBack reader : triggeredReaders) {
+			this.debug( "Calling a reader callback on " + tuple);
+			reader.getCallback().call(tuple);
+		}
+
+    	this.debug("Execute triggered taker: " + tuple);
+		if (trigerredTaker != null) {
+			this.debug( "Calling a taker callback on " + tuple);
+			trigerredTaker.getCallback().call(tuple);
+		}
+
     	this.debug("Exiting write:" + tuple);
     }
     
     private boolean canTake() {
-    	this.debug( "canTake : writer(" + this.writerInside + ") taker(" + this.takerInside + ") reader(" + this.numberReadersInside + ")");
-    	return ((this.numberReadersInside == 0) && (! this.takerInside) && (! this.writerInside));
+    	this.debug( "canTake");
+    	return ((! this.eventRegisterInside) && (this.numberReadersInside == 0) && (! this.takerInside) && (! this.writerInside));
     }
     
     private boolean takerWaiting() {
@@ -294,8 +358,7 @@ public class CentralizedLinda implements Linda {
 	
 	private Tuple takeOnce(Tuple template) {
 		Tuple t_take = null;
-		this.takerInside =  true;
-		this.debug("Taker inside: " + template);
+		this.debug("Taking once: " + template);
 		for(Tuple tuple : this.tupleSpaces) {
 			if(tuple.matches(template)) {
 				t_take = tuple.deepclone();
@@ -303,15 +366,13 @@ public class CentralizedLinda implements Linda {
 				break;
 			}
 		}
-		this.debug("Taker outside: " + template);
-		this.takerInside = false;
+		this.debug("Taking once: " + template + " " + t_take);
 		return t_take;
 	}
 	
 	private Collection<Tuple> takeMany(Tuple template) {
 		Collection<Tuple> t_take = new ArrayList<Tuple>();
-		this.takerInside =  true;
-		this.debug("Taker inside: " + template);
+		this.debug("Taking many: " + template);
 		Iterator<Tuple> iterator = this.tupleSpaces.iterator();
 		while (iterator.hasNext()) {
 			Tuple tuple = iterator.next();
@@ -320,8 +381,7 @@ public class CentralizedLinda implements Linda {
 				iterator.remove();
 			}
 		}
-		this.debug("Taker outside: " + template);
-		this.takerInside = false;
+		this.debug("Taking many: " + template + " " + t_take.size());
 		return t_take;
 	}
 	
@@ -349,7 +409,9 @@ public class CentralizedLinda implements Linda {
     	this.monitor.lock();
     	do {
     		this.waitingToTake(template);
+    		this.takerInside = true;
     		t_take = this.takeOnce(template);
+    		this.takerInside = false;
     		// If it was not possible to take a tuple compatible with the pattern
     		// sleep until other tuples are written
     		if (t_take == null) {
@@ -394,51 +456,49 @@ public class CentralizedLinda implements Linda {
 
 	@Override
 	public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) {
-		// TODO : We need to protect the readers/takers callback lists
-		// There should only be a single thread inside eventRegister at a time...
-		this.debug("Registering an " + mode + " " + timing + " callback on " + template);
+		this.monitor.lock();
+		waitingToRegister(template);
+		this.eventRegisterInside = true;
+		this.debug("Registering a " + mode + " " + timing + " callback on " + template);
+		Collection<Tuple> readTuples = null;
+		Tuple takenTuple = null;
 		switch (mode) {
 		case READ:
-			if ((timing == eventTiming.IMMEDIATE) && this.canRead()) {
-				// TODO: Should not be able to read if there is a writer/taker inside.
-				// Currently incorrect as it is reading without any synchronisation...
-				// It should make a tryRead...
-				Collection<Tuple> tuples = this.readMany(template);
-				if (tuples.isEmpty()) {
+			if (timing == eventTiming.IMMEDIATE) {
+				readTuples = this.readMany(template);
+				if (readTuples.isEmpty()) {
 					readers.add(new LindaCallBack(template,callback));
-				} else {
-					for (Tuple tuple : tuples) {
-						this.debug( "Calling an immediate reader callback on " + tuple);
-						callback.call(tuple);
-					}
 				}
 			} else {
 				readers.add(new LindaCallBack(template,callback));
 			}
 			break;
 		case TAKE:
-			if ((timing == eventTiming.IMMEDIATE) && this.canTake()) {
-				// TODO: Should not be able to take if there is a reader/writer/taker inside.
-				// Currently incorrect as it is taking without any synchronisation...
-				// It should make a tryTake...
-				Collection<Tuple> tuples = this.takeMany(template);
-				if (tuples.isEmpty()) {
+			if (timing == eventTiming.IMMEDIATE) {
+				takenTuple = this.takeOnce(template);
+				if (takenTuple == null) {
 					takers.add(new LindaCallBack(template,callback));
-				} else {
-					for (Tuple tuple : tuples) {
-						this.debug( "Calling an immediate taker callback on " + tuple);
-						callback.call(tuple);
-					}
 				}
 			} else {
 				takers.add(new LindaCallBack(template,callback));
 			}
 			break;
 		}
-		
+		this.eventRegisterInside = false;
+		this.monitor.unlock();
+		if (readTuples != null) {
+			for (Tuple tuple : readTuples) {
+				this.debug( "Calling an immediate callback on " + tuple);
+				callback.call(tuple);
+			}
+		}
+		if (takenTuple != null) {
+			this.debug( "Calling an immediate callback on " + takenTuple);
+			callback.call(takenTuple);
+		}
 	}
 	
-	private boolean triggers(Tuple tuple) {
+	private List<LindaCallBack> triggersReader(Tuple tuple) {
 		Iterator<LindaCallBack> iterator = this.readers.iterator();
 		List<LindaCallBack> triggered = new ArrayList<LindaCallBack>();
 		
@@ -450,32 +510,26 @@ public class CentralizedLinda implements Linda {
 				iterator.remove();
 			}
 		}
-		// Then execute all the reader callbacks
-		for (LindaCallBack reader : triggered) {
-			this.debug( "Calling a reader callback on " + tuple);
-			reader.getCallback().call(tuple);
-		}
-		boolean taken = false;
+		return triggered;
+	}
+	
+	private LindaCallBack triggersTaker(Tuple tuple) {
+		Iterator<LindaCallBack> iterator = this.takers.iterator();
+		LindaCallBack triggered = null;
 		LindaCallBack taker = null;
-		iterator = this.takers.iterator();
-		while (iterator.hasNext() && (! taken)) {
+		while (iterator.hasNext() && (triggered == null)) {
 			taker = iterator.next();
 			if (tuple.matches(taker.getTemplate())) {
-				taken = true;
+				triggered = taker;
 				iterator.remove();
 			}
 		}
-		if (taken) {
-			this.debug( "Calling a taker callback on " + tuple);
-			taker.getCallback().call(tuple);
-		}
-		return taken;
+		return triggered;
 	}
 
 	@Override
 	public void debug(String message) {
-		// TODO Auto-generated method stub
-		System.err.println(this.getThreadId() + " " + message);
+		System.err.println(this.getThreadId() + " " + message + " " + this.getStatus());
 	}
 
 }
