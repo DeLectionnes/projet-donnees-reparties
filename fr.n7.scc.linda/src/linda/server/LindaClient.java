@@ -1,5 +1,6 @@
 package linda.server;
 
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
@@ -24,7 +25,8 @@ public class LindaClient implements Linda {
     public LindaClient(String serverURI) {
         // TO BE COMPLETED
     	try {
-			this.server = (Linda) Naming.lookup(serverURI);
+    		this.debug( "Connecting to remote Linda server at URL: " + serverURI);
+			this.server = (RemoteLinda) Naming.lookup(serverURI);
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -105,21 +107,16 @@ public class LindaClient implements Linda {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		String servername = null;
-		int port = -1;
+		int port = LindaServer.DEFAULT_SERVER_PORT;
+		String serverURI = null;
 		try {
-			if (args.length == 0) {
-				servername = LindaServer.DEFAULT_SERVER_NAME;
-				port = LindaServer.DEFAULT_SERVER_PORT;
+			if (args.length > 0) {
+				serverURI =  args[0];
 			} else {
-				if (args.length == 1) {
-					servername = args[0];
-				} else {
-					servername = args[0];
-					port = Integer.parseInt(args[1]);
-				}
+				serverURI = "rmi://" + InetAddress.getLocalHost().getHostName() + ":" + port + "/LindaServer";
 			}
-			LindaClient me = new LindaClient( servername );
+			LindaClient me = new LindaClient( serverURI );
+			me.debug("Initialisation completed.");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

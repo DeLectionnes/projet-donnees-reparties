@@ -3,7 +3,12 @@
  */
 package linda.server;
 
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.UnknownHostException;
+import java.rmi.Naming;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMIServerSocketFactory;
@@ -21,7 +26,6 @@ import linda.shm.CentralizedLinda;
  */
 public class LindaServer extends UnicastRemoteObject implements Linda {
 	
-	public static final String DEFAULT_SERVER_NAME = "localhost";
 	public static final int DEFAULT_SERVER_PORT = 4000;
 	private CentralizedLinda local;
 
@@ -88,26 +92,29 @@ public class LindaServer extends UnicastRemoteObject implements Linda {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		String servername = null;
-		int port = -1;
-		String url = null;
+		int port = DEFAULT_SERVER_PORT;
+		String serverURI = null;
 		Registry registry = null;
 		try {
-			if (args.length == 0) {
-				servername = DEFAULT_SERVER_NAME;
-				port = DEFAULT_SERVER_PORT;
-			} else {
-				if (args.length == 1) {
-					servername = args[0];
-				} else {
-					servername = args[0];
-					port = Integer.parseInt(args[1]);
-				}
+			if (args.length > 0) {
+				port = Integer.parseInt(args[0]);
 			}
+			registry = LocateRegistry.createRegistry(port);
+			serverURI = "rmi://" + InetAddress.getLocalHost().getHostName() + ":" + port + "/LindaServer";
 			LindaServer server = new LindaServer();
-			
-		} catch (Exception e) {
-			
+			server.debug("Binding LindaServer at URI:" + serverURI);
+			Naming.rebind(serverURI, server);
+		} catch (NumberFormatException e) {
+			System.err.println( "The provided parameter is not a port number: " + args[0]);
+		} catch (RemoteException e) {
+			System.err.println( "There was an issue creating/accessing the registry at port: " + port);
+			e.printStackTrace();
+		} catch (UnknownHostException e) {
+			System.err.println( "There was an issue accessing the hostname of the system running the LindaServer program.");
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			System.err.println( "The following URL for registering the LindaServer is malformed:" + serverURI);
+			e.printStackTrace();
 		}
 	}
 
