@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Collection;
 
@@ -26,7 +27,11 @@ public class LindaClient implements Linda {
         // TO BE COMPLETED
     	try {
     		this.debug( "Connecting to remote Linda server at URL: " + serverURI);
-			this.server = (RemoteLinda) Naming.lookup(serverURI);
+    		Remote proxy = Naming.lookup(serverURI);
+    		for (Class<?> c : proxy.getClass().getInterfaces()) {
+    			this.debug("Proxy : " + c.getName());
+    		}
+			this.server = (Linda) proxy;
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

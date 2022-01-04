@@ -7,6 +7,7 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.rmi.Naming;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -102,7 +103,7 @@ public class LindaServer extends UnicastRemoteObject implements Linda {
 			registry = LocateRegistry.createRegistry(port);
 			serverURI = "rmi://" + InetAddress.getLocalHost().getHostName() + ":" + port + "/LindaServer";
 			LindaServer server = new LindaServer();
-			server.debug("Binding LindaServer at URI:" + serverURI);
+			server.debug("Binding LindaServer at URI: " + serverURI);
 			Naming.rebind(serverURI, server);
 		} catch (NumberFormatException e) {
 			System.err.println( "The provided parameter is not a port number: " + args[0]);
