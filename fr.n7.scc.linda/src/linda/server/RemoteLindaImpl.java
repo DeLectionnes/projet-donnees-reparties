@@ -12,6 +12,7 @@ import java.util.Collection;
 import linda.Tuple;
 import linda.Linda.eventMode;
 import linda.Linda.eventTiming;
+import linda.shm.AbstractCentralizedLinda;
 import linda.shm.CentralizedLinda;
 
 /**
@@ -20,7 +21,7 @@ import linda.shm.CentralizedLinda;
  */
 public class RemoteLindaImpl extends UnicastRemoteObject implements RemoteLinda {
 	
-	private CentralizedLinda local;
+	private AbstractCentralizedLinda local;
 
 	/**
 	 * @throws RemoteException

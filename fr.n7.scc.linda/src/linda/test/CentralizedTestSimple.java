@@ -6,8 +6,8 @@ import linda.Linda.eventTiming;
 
 public class CentralizedTestSimple {
 	private static int i;
-	// final static Linda linda = new linda.shm.CentralizedLinda();
-	final static Linda linda = new linda.server.LindaClient("//localhost:4000/LindaServer");
+	final static Linda linda = new linda.shm.CentralizedLinda();
+	// final static Linda linda = new linda.server.LindaClient("//localhost:4000/LindaServer");
 	
 	
 	private static class TestCallback implements Callback {

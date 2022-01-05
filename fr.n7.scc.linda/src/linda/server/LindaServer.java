@@ -19,7 +19,7 @@ import java.util.Collection;
 import linda.Callback;
 import linda.Linda;
 import linda.Tuple;
-import linda.shm.CentralizedLinda;
+import linda.shm.AbstractCentralizedLinda;
 
 /**
  * @author cpantel

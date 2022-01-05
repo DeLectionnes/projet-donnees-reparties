@@ -22,7 +22,7 @@ import linda.Tuple;
  * - BasicTestAsyncCallback
  * - BasicTestCallback
  */
-public class CentralizedLinda implements Linda {
+public abstract class AbstractCentralizedLinda implements Linda {
 	
 	/**
 	 * Is an event being registered ?
@@ -52,34 +52,13 @@ public class CentralizedLinda implements Linda {
 	private Condition writingPossible;
 	private Condition takingPossible;
 	
-	private List<Tuple> tupleSpaces; 
-	
-	private static class LindaCallBack {
-		private Tuple template;
-		public Tuple getTemplate() {
-			return template;
-		}
-
-		public Callback getCallback() {
-			return callback;
-		}
-
-		private Callback callback;
-		
-		public LindaCallBack(Tuple template, Callback callback) {
-			this.template = template;
-			this.callback = callback;
-		}
-		
-	}
-	
-	private List<LindaCallBack> readers;
-	private List<LindaCallBack> takers;
+	protected List<LindaCallBack> readers;
+	protected List<LindaCallBack> takers;
 	
     /**
      * 
      */
-    public CentralizedLinda() {
+    public AbstractCentralizedLinda() {
     	this.monitor = new java.util.concurrent.locks.ReentrantLock();
     	
     	this.eventRegisterInside = false;
@@ -92,7 +71,6 @@ public class CentralizedLinda implements Linda {
     	this.readingPossible = monitor.newCondition();
     	this.takingPossible = monitor.newCondition();
     	
-    	this.tupleSpaces = new ArrayList<Tuple>();
     	this.readers = new ArrayList<LindaCallBack>();
     	this.takers = new ArrayList<LindaCallBack>();
     }
@@ -167,27 +145,9 @@ public class CentralizedLinda implements Linda {
 		}
 	}
 	
-	private Tuple readOnce(Tuple template) {
-    	Tuple t_read = null;
-		for(Tuple tuple : this.tupleSpaces) {
-			if (tuple.matches(template)) {
-				t_read = tuple.deepclone();
-				break;
-			}
-		}
-		return t_read;
-	}
+	protected abstract Tuple readOnce(Tuple template);
 	
-	private Collection<Tuple> readMany(Tuple template) {
-    	Collection<Tuple> t_read = new ArrayList<Tuple>();
-		for(Tuple tuple : this.tupleSpaces) {
-			if (tuple.matches(template)) {
-				t_read.add(tuple.deepclone());
-				break;
-			}
-		}
-		return t_read;
-	}
+	protected abstract Collection<Tuple> readMany(Tuple template);
 	
 	// TODO : gestion des register
 	private void wakeAfterReading() {
@@ -313,6 +273,8 @@ public class CentralizedLinda implements Linda {
 		}
     }
     
+    protected abstract void writeOnce(Tuple tuple);
+    
 	@Override
     public void write(Tuple tuple) {
 		this.debug("Entering write: " + tuple);
@@ -324,7 +286,7 @@ public class CentralizedLinda implements Linda {
     	List<LindaCallBack> triggeredReaders = this.triggersReader( tuple );
     	LindaCallBack trigerredTaker = this.triggersTaker( tuple );
     	if (trigerredTaker == null) {
-        	tupleSpaces.add(tuple);
+        	writeOnce(tuple);
     	}
     	// TODO : vérifier que c'est au bon endroit.
     	writerInside = false;
@@ -367,34 +329,9 @@ public class CentralizedLinda implements Linda {
 		}		
 	}
 	
-	private Tuple takeOnce(Tuple template) {
-		Tuple t_take = null;
-		this.debug("Entering takeOnce: " + template);
-		for(Tuple tuple : this.tupleSpaces) {
-			if(tuple.matches(template)) {
-				t_take = tuple.deepclone();
-				boolean b = this.tupleSpaces.remove(tuple);
-				break;
-			}
-		}
-		this.debug("Exiting takeOnce: " + template + " " + t_take);
-		return t_take;
-	}
+	protected abstract Tuple takeOnce(Tuple template);
 	
-	private Collection<Tuple> takeMany(Tuple template) {
-		Collection<Tuple> t_take = new ArrayList<Tuple>();
-		this.debug("Entering takeMany: " + template);
-		Iterator<Tuple> iterator = this.tupleSpaces.iterator();
-		while (iterator.hasNext()) {
-			Tuple tuple = iterator.next();
-			if(tuple.matches(template)) {
-				t_take.add(tuple.deepclone());
-				iterator.remove();
-			}
-		}
-		this.debug("Exiting takeMany: " + template + " " + t_take.size());
-		return t_take;
-	}
+	protected abstract Collection<Tuple> takeMany(Tuple template);
 	
 	private void wakeAfterTaking() {
 		if (this.eventRegisteringWaiting()) {
@@ -517,34 +454,9 @@ public class CentralizedLinda implements Linda {
 		}
 	}
 	
-	private List<LindaCallBack> triggersReader(Tuple tuple) {
-		Iterator<LindaCallBack> iterator = this.readers.iterator();
-		List<LindaCallBack> triggered = new ArrayList<LindaCallBack>();
-		
-		// First collects all the reader callbacks
-		while (iterator.hasNext()) {
-			LindaCallBack reader = iterator.next();
-			if (tuple.matches(reader.getTemplate())) {
-				triggered.add(reader);
-				iterator.remove();
-			}
-		}
-		return triggered;
-	}
+	protected abstract List<LindaCallBack> triggersReader(Tuple tuple);
 	
-	private LindaCallBack triggersTaker(Tuple tuple) {
-		Iterator<LindaCallBack> iterator = this.takers.iterator();
-		LindaCallBack triggered = null;
-		LindaCallBack taker = null;
-		while (iterator.hasNext() && (triggered == null)) {
-			taker = iterator.next();
-			if (tuple.matches(taker.getTemplate())) {
-				triggered = taker;
-				iterator.remove();
-			}
-		}
-		return triggered;
-	}
+	protected abstract LindaCallBack triggersTaker(Tuple tuple);
 
 	@Override
 	public void debug(String message) {
