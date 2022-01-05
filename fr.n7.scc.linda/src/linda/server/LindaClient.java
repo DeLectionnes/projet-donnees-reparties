@@ -6,6 +6,7 @@ import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import linda.server.LindaServer;
@@ -18,20 +19,19 @@ import linda.Tuple;
  * */
 public class LindaClient implements Linda {
 	
-	private Linda server;
+	private RemoteLinda server;
 	
     /** Initializes the Linda implementation.
      *  @param serverURI the URI of the server, e.g. "rmi://localhost:4000/LindaServer" or "//localhost:4000/LindaServer".
      */
     public LindaClient(String serverURI) {
-        // TO BE COMPLETED
     	try {
     		this.debug( "Connecting to remote Linda server at URL: " + serverURI);
     		Remote proxy = Naming.lookup(serverURI);
     		for (Class<?> c : proxy.getClass().getInterfaces()) {
     			this.debug("Proxy : " + c.getName());
     		}
-			this.server = (Linda) proxy;
+			this.server = (RemoteLinda) proxy;
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -46,44 +46,78 @@ public class LindaClient implements Linda {
 
 	@Override
 	public void write(Tuple tuple) {
-		// TODO Auto-generated method stub
-		this.server.write(tuple);
+		try {
+			this.server.write(tuple);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public Tuple take(Tuple template) {
-		// TODO Auto-generated method stub
-		return this.server.take(template);
+		try {
+			return this.server.take(template);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	@Override
 	public Tuple read(Tuple template) {
-		// TODO Auto-generated method stub
-		return this.server.read(template);
+		try {
+			return this.server.read(template);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	@Override
 	public Tuple tryTake(Tuple template) {
-		// TODO Auto-generated method stub
-		return this.server.tryTake(template);
+		try {
+			return this.server.tryTake(template);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	@Override
 	public Tuple tryRead(Tuple template) {
-		// TODO Auto-generated method stub
-		return this.server.tryRead(template);
+		try {
+			return this.server.tryRead(template);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	@Override
 	public Collection<Tuple> takeAll(Tuple template) {
-		// TODO Auto-generated method stub
-		return this.server.takeAll(template);
+		try {
+			return this.server.takeAll(template);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return new ArrayList<Tuple>();
+		}
 	}
 
 	@Override
 	public Collection<Tuple> readAll(Tuple template) {
-		// TODO Auto-generated method stub
-		return this.server.readAll(template);
+		try {
+			return this.server.readAll(template);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return new ArrayList<Tuple>();
+		}
 	}
 
 	@Override
@@ -93,8 +127,14 @@ public class LindaClient implements Linda {
 	 * Il faut donc créer un objet local accessible à distance qui encapsule le callback local.
 	 */
 	public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) {
-		// TODO Auto-generated method stub
-		this.server.eventRegister(mode, timing, template, callback);
+		RemoteCallback proxy;
+		try {
+			proxy = new RemoteCallbackImpl( callback);
+			this.server.eventRegister(mode, timing, template, proxy);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
     private String getThreadId() {

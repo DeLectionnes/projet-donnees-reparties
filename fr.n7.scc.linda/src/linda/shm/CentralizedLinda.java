@@ -189,20 +189,25 @@ public class CentralizedLinda implements Linda {
 		return t_read;
 	}
 	
+	// TODO : gestion des register
 	private void wakeAfterReading() {
-    	if (this.readerWaiting()) {
-    		this.readingPossible.signalAll();
-    	} else {
-    		if (this.numberReadersInside == 0) {
-    			if (this.writerWaiting()) {
-    				this.writingPossible.signalAll();
-    			} else {
-    				if (this.takerWaiting()) {
-        				this.takingPossible.signalAll();
-        			}
-    			}
-    		}
-    	}
+		if (this.eventRegisteringWaiting()) {
+			this.eventRegisteringPossible.signalAll();
+		} else {
+	    	if (this.readerWaiting()) {
+	    		this.readingPossible.signalAll();
+	    	} else {
+	    		if (this.numberReadersInside == 0) {
+	    			if (this.writerWaiting()) {
+	    				this.writingPossible.signalAll();
+	    			} else {
+	    				if (this.takerWaiting()) {
+	        				this.takingPossible.signalAll();
+	        			}
+	    			}
+	    		}
+	    	}
+		}
 	}
     
 	/**
@@ -289,18 +294,23 @@ public class CentralizedLinda implements Linda {
     	}
     }
     
+ // TODO : gestion des register
     private void wakeAfterWriting() {
-    	if (this.readerWaiting()) {
-    		this.readingPossible.signalAll();
-    	} else {
-    		if (this.writerWaiting()) {
-    			this.writingPossible.signalAll();
-    		} else {
-    			if (this.takerWaiting()) {
-        			this.takingPossible.signalAll();
-        		}
-    		}
-   		}
+		if (this.eventRegisteringWaiting()) {
+			this.eventRegisteringPossible.signalAll();
+		} else {
+	    	if (this.readerWaiting()) {
+	    		this.readingPossible.signalAll();
+	    	} else {
+	    		if (this.writerWaiting()) {
+	    			this.writingPossible.signalAll();
+	    		} else {
+	    			if (this.takerWaiting()) {
+	        			this.takingPossible.signalAll();
+	        		}
+	    		}
+	   		}
+		}
     }
     
 	@Override
@@ -315,9 +325,10 @@ public class CentralizedLinda implements Linda {
     	LindaCallBack trigerredTaker = this.triggersTaker( tuple );
     	if (trigerredTaker == null) {
         	tupleSpaces.add(tuple);
-        	this.wakeAfterWriting();
     	}
+    	// TODO : vérifier que c'est au bon endroit.
     	writerInside = false;
+    	this.wakeAfterWriting();
     	this.monitor.unlock();
     	this.debug("Execute triggered readers: " + tuple);
 		// Then execute all the reader callbacks
@@ -358,7 +369,7 @@ public class CentralizedLinda implements Linda {
 	
 	private Tuple takeOnce(Tuple template) {
 		Tuple t_take = null;
-		this.debug("Taking once: " + template);
+		this.debug("Entering takeOnce: " + template);
 		for(Tuple tuple : this.tupleSpaces) {
 			if(tuple.matches(template)) {
 				t_take = tuple.deepclone();
@@ -366,13 +377,13 @@ public class CentralizedLinda implements Linda {
 				break;
 			}
 		}
-		this.debug("Taking once: " + template + " " + t_take);
+		this.debug("Exiting takeOnce: " + template + " " + t_take);
 		return t_take;
 	}
 	
 	private Collection<Tuple> takeMany(Tuple template) {
 		Collection<Tuple> t_take = new ArrayList<Tuple>();
-		this.debug("Taking many: " + template);
+		this.debug("Entering takeMany: " + template);
 		Iterator<Tuple> iterator = this.tupleSpaces.iterator();
 		while (iterator.hasNext()) {
 			Tuple tuple = iterator.next();
@@ -381,22 +392,26 @@ public class CentralizedLinda implements Linda {
 				iterator.remove();
 			}
 		}
-		this.debug("Taking many: " + template + " " + t_take.size());
+		this.debug("Exiting takeMany: " + template + " " + t_take.size());
 		return t_take;
 	}
 	
 	private void wakeAfterTaking() {
-    	if (this.readerWaiting()) {
-    		this.readingPossible.signalAll();
-    	} else {
-    		if (this.writerWaiting()) {
-    			this.writingPossible.signalAll();
-    		} else {
-    			if (this.takerWaiting()) {
-        			this.takingPossible.signalAll();
-        		}
-    		}
-   		}
+		if (this.eventRegisteringWaiting()) {
+			this.eventRegisteringPossible.signalAll();
+		} else {
+	    	if (this.readerWaiting()) {
+	    		this.readingPossible.signalAll();
+	    	} else {
+	    		if (this.writerWaiting()) {
+	    			this.writingPossible.signalAll();
+	    		} else {
+	    			if (this.takerWaiting()) {
+	        			this.takingPossible.signalAll();
+	        		}
+	    		}
+	   		}
+		}
 	}
      
 	/**
