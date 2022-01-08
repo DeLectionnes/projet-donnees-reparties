@@ -3,12 +3,14 @@
  */
 package linda.shm;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
 import linda.Tuple;
+import linda.TupleSpace;
 
 /**
  * @author cpantel
@@ -16,36 +18,42 @@ import linda.Tuple;
  */
 public class CentralizedLinda extends AbstractCentralizedLinda {
 	
-	protected List<Tuple> tupleSpaces; 
+	protected TupleSpace tuples; 
 
 	/**
 	 * 
 	 */
 	public CentralizedLinda() {
 		super();
-		// TODO Auto-generated constructor stub
-    	this.tupleSpaces = new ArrayList<Tuple>();
+    	this.tuples = new TupleSpace();
+	}
+	
+	/**
+	 * @throws IOException 
+	 * 
+	 */
+	public CentralizedLinda(String name) throws IOException {
+		super();
+    	this.tuples = new TupleSpace(name);
+	}
+	
+	public void store(String name) throws IOException {
+		this.tuples.store(name);
 	}
 	
 	protected Tuple readOnce(Tuple template) {
     	Tuple t_read = null;
-		for(Tuple tuple : this.tupleSpaces) {
-			if (tuple.matches(template)) {
-				t_read = tuple.deepclone();
-				break;
-			}
-		}
+		this.debug("Entering readOnce: " + template);
+    	t_read = this.tuples.readOnce(template);
+		this.debug("Exiting readOnce: " + template + " " + t_read);
 		return t_read;
 	}
 	
 	protected Collection<Tuple> readMany(Tuple template) {
-    	Collection<Tuple> t_read = new ArrayList<Tuple>();
-		for(Tuple tuple : this.tupleSpaces) {
-			if (tuple.matches(template)) {
-				t_read.add(tuple.deepclone());
-				break;
-			}
-		}
+    	Collection<Tuple> t_read = null;
+		this.debug("Entering readMany: " + template);
+    	t_read = this.tuples.readMany(template);
+		this.debug("Exiting readMany: " + template + " " + t_read);
 		return t_read;
 	}
 	
@@ -80,35 +88,21 @@ public class CentralizedLinda extends AbstractCentralizedLinda {
 
 	@Override
 	protected void writeOnce(Tuple tuple) {
-		// TODO Auto-generated method stub
-		this.tupleSpaces.add(tuple);
+		this.tuples.writeOnce(tuple);
 	}
 	
 	protected Tuple takeOnce(Tuple template) {
 		Tuple t_take = null;
 		this.debug("Entering takeOnce: " + template);
-		for(Tuple tuple : this.tupleSpaces) {
-			if(tuple.matches(template)) {
-				t_take = tuple.deepclone();
-				boolean b = this.tupleSpaces.remove(tuple);
-				break;
-			}
-		}
+		t_take = this.tuples.takeOnce(template);
 		this.debug("Exiting takeOnce: " + template + " " + t_take);
 		return t_take;
 	}
 	
 	protected Collection<Tuple> takeMany(Tuple template) {
-		Collection<Tuple> t_take = new ArrayList<Tuple>();
+		Collection<Tuple> t_take = null;
 		this.debug("Entering takeMany: " + template);
-		Iterator<Tuple> iterator = this.tupleSpaces.iterator();
-		while (iterator.hasNext()) {
-			Tuple tuple = iterator.next();
-			if(tuple.matches(template)) {
-				t_take.add(tuple.deepclone());
-				iterator.remove();
-			}
-		}
+		t_take = this.tuples.takeMany(template);
 		this.debug("Exiting takeMany: " + template + " " + t_take.size());
 		return t_take;
 	}

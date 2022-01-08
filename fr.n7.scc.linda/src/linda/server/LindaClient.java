@@ -47,7 +47,9 @@ public class LindaClient implements Linda {
 	@Override
 	public void write(Tuple tuple) {
 		try {
+			this.debug("Entering write: " + tuple);
 			this.server.write(tuple);
+	    	this.debug("Exiting write:" + tuple);
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -57,7 +59,10 @@ public class LindaClient implements Linda {
 	@Override
 	public Tuple take(Tuple template) {
 		try {
-			return this.server.take(template);
+			this.debug("Entering take: " + template);
+			Tuple t_taken = this.server.take(template);
+			this.debug("Exiting take: " + template + " -> " + t_taken);
+			return t_taken;
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -68,7 +73,10 @@ public class LindaClient implements Linda {
 	@Override
 	public Tuple read(Tuple template) {
 		try {
-			return this.server.read(template);
+			this.debug("Entering take: " + template);
+			Tuple t_read = this.server.read(template);
+			this.debug("Exiting read:" + template + " -> " + t_read);
+			return t_read;
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -79,9 +87,13 @@ public class LindaClient implements Linda {
 	@Override
 	public Tuple tryTake(Tuple template) {
 		try {
-			return this.server.tryTake(template);
+			this.debug("Entering tryTake: " + template);
+			Tuple t_taken = this.server.tryTake(template);
+			this.debug("Exiting tryTake: " + template + " -> " + t_taken);
+			return t_taken;
 		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
+			// As this is an asynchronous take, we decided to catch and hide the exception
+			// and to return null as the take failed.
 			e.printStackTrace();
 			return null;
 		}
@@ -90,9 +102,13 @@ public class LindaClient implements Linda {
 	@Override
 	public Tuple tryRead(Tuple template) {
 		try {
-			return this.server.tryRead(template);
+			this.debug("Entering tryRead: " + template);
+			Tuple t_read = this.server.tryRead(template);
+			this.debug("Exiting tryRead: " + template + " -> " + t_read);
+			return t_read;
 		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
+			// As this is an asynchronous read, we decided to catch and hide the exception
+			// and to return null as the read failed.
 			e.printStackTrace();
 			return null;
 		}
@@ -101,9 +117,13 @@ public class LindaClient implements Linda {
 	@Override
 	public Collection<Tuple> takeAll(Tuple template) {
 		try {
-			return this.server.takeAll(template);
+			this.debug("Entering takeAll: " + template);
+			Collection<Tuple> t_taken = this.server.takeAll(template);
+			this.debug("Exiting takeAll: " + template + " -> " + t_taken);
+			return t_taken;
 		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
+			// As this is an asynchronous take, we decided to catch and hide the exception
+			// and to return an empty collection as the take failed.
 			e.printStackTrace();
 			return new ArrayList<Tuple>();
 		}
@@ -112,9 +132,13 @@ public class LindaClient implements Linda {
 	@Override
 	public Collection<Tuple> readAll(Tuple template) {
 		try {
-			return this.server.readAll(template);
+			this.debug("Entering readAll: " + template);
+			Collection<Tuple> t_read = this.server.readAll(template);
+			this.debug("Exiting readAll: " + template + " -> " + t_read);
+			return t_read;			
 		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
+			// As this is an asynchronous read, we decided to catch and hide the exception
+			// and to return an empty collection as the read failed.
 			e.printStackTrace();
 			return new ArrayList<Tuple>();
 		}
@@ -122,13 +146,14 @@ public class LindaClient implements Linda {
 
 	@Override
 	/*
-	 * TODO : Il faut soit créer un callback qui est accessible à distance, soit créer un callback serialisable qui sera exécuté sur le serveur.
-	 * Nous n'avons pas le doit de modifier le callback existant, donc il n'est pas possible d'en faire une version sérialisable...
-	 * Il faut donc créer un objet local accessible à distance qui encapsule le callback local.
+	 * As the client is connected to a remote server, we must allow the remote server to access the
+	 * local callback. We decided to create an RMI object that wraps the local callback and thus provide
+	 * a remote access to the callback.
 	 */
 	public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) {
 		RemoteCallback proxy;
 		try {
+			this.debug("Registering a " + mode + " " + timing + " callback on " + template);
 			proxy = new RemoteCallbackImpl( callback);
 			this.server.eventRegister(mode, timing, template, proxy);
 		} catch (RemoteException e) {
@@ -143,13 +168,12 @@ public class LindaClient implements Linda {
 
 	@Override
 	public void debug(String message) {
-		// TODO Auto-generated method stub
 		System.err.println(this.getThreadId() + " " + message);
 	}
     
     // TO BE COMPLETED
 	/**
-	 * @param args
+	 * @param args: URI for the remote LindaServer
 	 */
 	public static void main(String[] args) {
 		int port = LindaServer.DEFAULT_SERVER_PORT;

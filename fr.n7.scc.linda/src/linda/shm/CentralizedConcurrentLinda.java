@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.List;
 
 import linda.Tuple;
+import linda.TupleSpace;
 
 /**
  * @author cpantel
@@ -17,12 +18,20 @@ import linda.Tuple;
  *
  */
 public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
+	
+	private int size;
+	
+	private TupleSpace[] spaces;
 
 	/**
 	 * 
 	 */
-	public CentralizedConcurrentLinda() {
-		// TODO Auto-generated constructor stub
+	public CentralizedConcurrentLinda(int _size) {
+		this.size = _size;
+		this.spaces = new TupleSpace [this.size];
+		for (int i = 0; i < this.size; i++) {
+			this.spaces[i] = new TupleSpace();
+		}
 	}
 
 	@Override

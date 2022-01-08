@@ -14,21 +14,39 @@ import linda.Tuple;
  */
 public class RemoteCallbackAdapter implements Callback {
 
+	/**
+	 * 
+	 */
 	private RemoteCallback proxy;
 	
 	/**
 	 * 
 	 */
 	public RemoteCallbackAdapter(RemoteCallback _proxy) {
-		// TODO Auto-generated constructor stub
+		this.debug("Creating a remote Callback for: " + _proxy);
 		this.proxy = _proxy;
+	}
+	
+    /**
+     * @return
+     */
+    private String getThreadId() {
+    	return Thread.currentThread().getName();
+    }
+	
+	/**
+	 * @param message
+	 */
+	public void debug(String message) {
+		System.err.println(this.getThreadId() + " " + message);
 	}
 
 	@Override
 	public void call(Tuple tuple) {
-		// TODO Auto-generated method stub
 		try {
+			this.debug("Entering remote Callback: " + tuple);
 			this.proxy.call(tuple);
+			this.debug("Exiting remote Callback: " + tuple);
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

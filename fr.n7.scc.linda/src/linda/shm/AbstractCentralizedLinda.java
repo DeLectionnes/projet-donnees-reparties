@@ -197,7 +197,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
     	} while (t_read == null);
     	this.wakeAfterReading();
     	this.monitor.unlock();
-    	this.debug("Exiting read:" + template);
+    	this.debug("Exiting read:" + template + " -> " + t_read);
     	return t_read;
     }
   
