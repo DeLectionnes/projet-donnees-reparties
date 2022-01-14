@@ -31,6 +31,8 @@ public class CribleEratosthene {
 			}.start();
 		}
 		
+		// AFAIRE : Utiliser une barrière pour attendre la fin de processus de criblage avant d'afficher les nombres premiers. Sinon, l'attente
+		// peut ne pas être suffisante.
 		Thread.sleep((long) 10000);
 		int count = 0;
 		for (int depot = 2; depot<= limite; depot++) {
@@ -41,7 +43,7 @@ public class CribleEratosthene {
 				count++;
 			}
 		}
-		System.out.println("Nomre total de premiers : ");
+		System.out.println("Nombre total de premiers : ");
 		System.out.print(count);
 		
 	}

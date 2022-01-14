@@ -21,6 +21,8 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 	
 	private int size;
 	
+	private int nextSlot;
+	
 	private TupleSpace[] spaces;
 
 	/**
@@ -28,6 +30,7 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 	 */
 	public CentralizedConcurrentLinda(int _size) {
 		this.size = _size;
+		this.nextSlot = 0;
 		this.spaces = new TupleSpace [this.size];
 		for (int i = 0; i < this.size; i++) {
 			this.spaces[i] = new TupleSpace();
@@ -48,8 +51,8 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 
 	@Override
 	protected void writeOnce(Tuple tuple) {
-		// TODO Auto-generated method stub
-
+		this.spaces[this.nextSlot].writeOnce(tuple);
+		this.nextSlot = (this.nextSlot + 1) % this.size;
 	}
 
 	@Override
@@ -65,13 +68,13 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 	}
 
 	@Override
-	protected List<LindaCallBack> triggersReader(Tuple tuple) {
+	protected List<LindaCallback> triggersReader(Tuple tuple) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	protected LindaCallBack triggersTaker(Tuple tuple) {
+	protected LindaCallback triggersTaker(Tuple tuple) {
 		// TODO Auto-generated method stub
 		return null;
 	}

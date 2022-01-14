@@ -10,7 +10,7 @@ import linda.Tuple;
  * @author cpantel
  *
  */
-public class LindaCallBack {
+public class LindaCallback {
 	private Tuple template;
 	public Tuple getTemplate() {
 		return template;
@@ -22,7 +22,7 @@ public class LindaCallBack {
 
 	private Callback callback;
 	
-	public LindaCallBack(Tuple template, Callback callback) {
+	public LindaCallback(Tuple template, Callback callback) {
 		this.template = template;
 		this.callback = callback;
 	}

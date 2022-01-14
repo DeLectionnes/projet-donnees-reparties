@@ -52,8 +52,8 @@ public abstract class AbstractCentralizedLinda implements Linda {
 	private Condition writingPossible;
 	private Condition takingPossible;
 	
-	protected List<LindaCallBack> readers;
-	protected List<LindaCallBack> takers;
+	protected List<LindaCallback> readers;
+	protected List<LindaCallback> takers;
 	
     /**
      * 
@@ -71,8 +71,8 @@ public abstract class AbstractCentralizedLinda implements Linda {
     	this.readingPossible = monitor.newCondition();
     	this.takingPossible = monitor.newCondition();
     	
-    	this.readers = new ArrayList<LindaCallBack>();
-    	this.takers = new ArrayList<LindaCallBack>();
+    	this.readers = new ArrayList<LindaCallback>();
+    	this.takers = new ArrayList<LindaCallback>();
     }
     
     private String getThreadId() {
@@ -185,10 +185,17 @@ public abstract class AbstractCentralizedLinda implements Linda {
     		numberReadersInside -= 1;
     		// If it was not possible to read a tuple compatible with the pattern
     		// sleep until other tuples are written
+    		// It may be more efficient to register a reader callback and wait for its completion instead of being waked regularly when
+    		// reading is possible even if nothing has been written. We can create a specific condition variable to wait on.
+    		// TODO : Semble fonctionner, supprimer la boucle.
     		if (t_read == null) {
     			try {
     				this.debug("Read sleeping: " + template);
-    				this.readingPossible.await();
+        			WaiterCallback waiter = new WaiterCallback(this.monitor);
+        			this.readers.add(new LindaCallback( template, waiter));
+        			waiter.getCondition().await();
+        			t_read = waiter.getResult();
+//    				this.readingPossible.await();
     			} catch (InterruptedException e) {
     				// TODO Auto-generated catch block
     				e.printStackTrace();
@@ -283,8 +290,8 @@ public abstract class AbstractCentralizedLinda implements Linda {
     	writerInside = true;
     	// TODO : Should not add if a taker callback is triggered
     	// Triggers readers and takers (TODO : should remove the tuple) 
-    	List<LindaCallBack> triggeredReaders = this.triggersReader( tuple );
-    	LindaCallBack trigerredTaker = this.triggersTaker( tuple );
+    	List<LindaCallback> triggeredReaders = this.triggersReader( tuple );
+    	LindaCallback trigerredTaker = this.triggersTaker( tuple );
     	if (trigerredTaker == null) {
         	writeOnce(tuple);
     	}
@@ -294,7 +301,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
     	this.monitor.unlock();
     	this.debug("Execute triggered readers: " + tuple);
 		// Then execute all the reader callbacks
-		for (LindaCallBack reader : triggeredReaders) {
+		for (LindaCallback reader : triggeredReaders) {
 			this.debug( "Calling a reader callback on " + tuple);
 			reader.getCallback().call(tuple);
 		}
@@ -356,30 +363,37 @@ public abstract class AbstractCentralizedLinda implements Linda {
 	 */
 	@Override
     public Tuple take(Tuple template) {
-    	Tuple t_take = null;
+    	Tuple t_taken = null;
 		this.debug("Entering take: " + template);
     	this.monitor.lock();
     	do {
     		this.waitingToTake(template);
     		this.takerInside = true;
-    		t_take = this.takeOnce(template);
+    		t_taken = this.takeOnce(template);
     		this.takerInside = false;
     		// If it was not possible to take a tuple compatible with the pattern
     		// sleep until other tuples are written
-    		if (t_take == null) {
+    		// It may be more efficient to register a reader callback and wait for its completion instead of being waked regularly when
+    		// reading is possible even if nothing has been written. We can create a specific condition variable to wait on.
+    		// TODO : Semble fonctionner, supprimer la boucle.
+    		if (t_taken == null) {
     			try {
     				this.debug("Take sleeping: " + template);
-    				this.takingPossible.await();
+        			WaiterCallback waiter = new WaiterCallback(this.monitor);
+        			this.readers.add(new LindaCallback( template, waiter));
+        			waiter.getCondition().await();
+        			t_taken = waiter.getResult();
+//    				this.takingPossible.await();
     			} catch (InterruptedException e) {
     				// TODO Auto-generated catch block
     				e.printStackTrace();
     			}
     		}
-    	} while (t_take == null);
+    	} while (t_taken == null);
     	this.wakeAfterTaking();
     	this.monitor.unlock();
     	this.debug("Exiting take:" + template);
-    	return t_take;
+    	return t_taken;
     }
 
 	@Override
@@ -423,20 +437,20 @@ public abstract class AbstractCentralizedLinda implements Linda {
 			if (timing == eventTiming.IMMEDIATE) {
 				readTuples = this.readMany(template);
 				if (readTuples.isEmpty()) {
-					readers.add(new LindaCallBack(template,callback));
+					readers.add(new LindaCallback(template,callback));
 				}
 			} else {
-				readers.add(new LindaCallBack(template,callback));
+				readers.add(new LindaCallback(template,callback));
 			}
 			break;
 		case TAKE:
 			if (timing == eventTiming.IMMEDIATE) {
 				takenTuple = this.takeOnce(template);
 				if (takenTuple == null) {
-					takers.add(new LindaCallBack(template,callback));
+					takers.add(new LindaCallback(template,callback));
 				}
 			} else {
-				takers.add(new LindaCallBack(template,callback));
+				takers.add(new LindaCallback(template,callback));
 			}
 			break;
 		}
@@ -454,9 +468,9 @@ public abstract class AbstractCentralizedLinda implements Linda {
 		}
 	}
 	
-	protected abstract List<LindaCallBack> triggersReader(Tuple tuple);
+	protected abstract List<LindaCallback> triggersReader(Tuple tuple);
 	
-	protected abstract LindaCallBack triggersTaker(Tuple tuple);
+	protected abstract LindaCallback triggersTaker(Tuple tuple);
 
 	@Override
 	public void debug(String message) {

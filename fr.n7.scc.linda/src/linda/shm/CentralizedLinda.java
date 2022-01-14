@@ -57,13 +57,13 @@ public class CentralizedLinda extends AbstractCentralizedLinda {
 		return t_read;
 	}
 	
-	protected List<LindaCallBack> triggersReader(Tuple tuple) {
-		Iterator<LindaCallBack> iterator = this.readers.iterator();
-		List<LindaCallBack> triggered = new ArrayList<LindaCallBack>();
+	protected List<LindaCallback> triggersReader(Tuple tuple) {
+		Iterator<LindaCallback> iterator = this.readers.iterator();
+		List<LindaCallback> triggered = new ArrayList<LindaCallback>();
 		
 		// First collects all the reader callbacks
 		while (iterator.hasNext()) {
-			LindaCallBack reader = iterator.next();
+			LindaCallback reader = iterator.next();
 			if (tuple.matches(reader.getTemplate())) {
 				triggered.add(reader);
 				iterator.remove();
@@ -72,10 +72,10 @@ public class CentralizedLinda extends AbstractCentralizedLinda {
 		return triggered;
 	}
 	
-	protected LindaCallBack triggersTaker(Tuple tuple) {
-		Iterator<LindaCallBack> iterator = this.takers.iterator();
-		LindaCallBack triggered = null;
-		LindaCallBack taker = null;
+	protected LindaCallback triggersTaker(Tuple tuple) {
+		Iterator<LindaCallback> iterator = this.takers.iterator();
+		LindaCallback triggered = null;
+		LindaCallback taker = null;
 		while (iterator.hasNext() && (triggered == null)) {
 			taker = iterator.next();
 			if (tuple.matches(taker.getTemplate())) {
