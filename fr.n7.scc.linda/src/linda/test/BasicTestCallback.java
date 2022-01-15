@@ -23,7 +23,8 @@ public class BasicTestCallback {
     }
 
     public static void main(String[] a) {
-        linda = new linda.shm.CentralizedLinda();
+    	// linda = new linda.shm.CentralizedLinda();
+        linda = new linda.shm.CentralizedConcurrentLinda(2);
         // linda = new linda.server.LindaClient("//localhost:4000/LindaServer");
 
         cbmotif = new Tuple(Integer.class, String.class);

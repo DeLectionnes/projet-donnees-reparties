@@ -14,10 +14,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author cpantel
- * This class allows to store tuples in files.
+ * 
  *
  */
 public class TupleSpace {
@@ -32,10 +33,8 @@ public class TupleSpace {
 	}
 	
 	/**
-	 * @throws IOException 
-	 * 
-	 */
-	/**
+	 * This class allows to load and store tuples in files using serialization. The purpose is to build tests.
+	 * This constructor initialize a tuple space with date contained in a file.
 	 * @param name: File name which contains a serialized tuple space.
 	 * @throws IOException: An issue occurred during the reading of the file.
 	 */
@@ -43,6 +42,11 @@ public class TupleSpace {
 		this.load(name);
 	}
 	
+	/**
+	 * This class allows to load and store tuples in files using serialization. The purpose is to build tests.
+	 * @param name: Name of the file containing the tuples that must be loaded.
+	 * @throws IOException
+	 */
 	public void load(String name) throws IOException {
 		try {
 			FileInputStream file = new FileInputStream( new File(name) );
@@ -61,47 +65,117 @@ public class TupleSpace {
 		}
 	}
 	
+	/**
+	 * @param name
+	 * @throws IOException
+	 */
 	public void store(String name) throws IOException {
 		FileOutputStream file = new FileOutputStream( new File(name) );
 		ObjectOutputStream stream = new ObjectOutputStream( file );
 		stream.writeObject(this.tuples);
 	}
 	
+	/**
+	 * Read a single tuple matching the template
+	 * @param template: Pattern expressing the shape of the read tuple
+	 * @return Either the read tuple if a tuple matching the template is present in the tuple space or null
+	 */
 	public Tuple readOnce(Tuple template) {
     	Tuple t_read = null;
-		for(Tuple tuple : this.tuples) {
+    	Iterator<Tuple> iterator = this.tuples.iterator();
+		while (iterator.hasNext()) {
+			Tuple tuple = iterator.next();
 			if (tuple.matches(template)) {
 				t_read = tuple.deepclone();
-				break;
 			}
 		}
 		return t_read;
 	}
 	
+	/**
+	 * Read a single tuple matching the template. This operation is cancelled if the AtomicBoolean becomes true.
+	 * @param template: Pattern expressing the shape of the read tuple
+	 * @param cancel: Use of the Test and Set solution with an AtomicBoolean to stop the operation is others Thread succeeded.
+	 * @return Either the read tuple if a tuple matching the template is present in the tuple space or null if it is not present
+	 * or if the operation was cancelled.
+	 */
+	public Tuple readOnce(Tuple template, AtomicBoolean cancel) {
+    	Tuple t_read = null;
+    	Iterator<Tuple> iterator = this.tuples.iterator();
+		while (iterator.hasNext() && (! cancel.get())) {
+			Tuple tuple = iterator.next();
+			if (tuple.matches(template)) {
+				if (! cancel.getAndSet(true)) {
+					t_read = tuple.deepclone();
+				}
+			}
+		}
+		return t_read;
+	}
+	
+	/**
+	 * @param template
+	 * @return
+	 */
 	public Collection<Tuple> readMany(Tuple template) {
     	Collection<Tuple> t_read = new ArrayList<Tuple>();
-		for(Tuple tuple : this.tuples) {
+    	Iterator<Tuple> iterator = this.tuples.iterator();
+		while (iterator.hasNext()) {
+			Tuple tuple = iterator.next();
 			if (tuple.matches(template)) {
 				t_read.add(tuple.deepclone());
-				break;
 			}
 		}
 		return t_read;
 	}
 	
+	/**
+	 * Take a single tuple matching the template
+	 * @param template: Pattern expressing the shape of the taken tuple
+	 * @return Either the taken tuple if a tuple matching the template is present in the tuple space or null
+	 */
 	public Tuple takeOnce(Tuple template) {
 		Tuple t_take = null;
-		for(Tuple tuple : this.tuples) {
-			if(tuple.matches(template)) {
+    	Iterator<Tuple> iterator = this.tuples.iterator();
+		while (iterator.hasNext()) {
+			Tuple tuple = iterator.next();
+			if (tuple.matches(template)) {
 				// TODO : est il utile de cloner s'il s'agit d'une prise ?
 				t_take = tuple.deepclone();
-				boolean b = this.tuples.remove(tuple);
-				break;
+				iterator.remove();
 			}
 		}
 		return t_take;
 	}
 	
+	/**
+	 * Take a single tuple matching the template. This operation is cancelled if the AtomicBoolean becomes true.
+	 * The operation removes the tuple from the tuple space.
+	 * @param template: Pattern expressing the shape of the taken tuple
+	 * @param cancel: Use of the Test and Set solution with an AtomicBoolean to stop the operation is others Thread succeeded.
+	 * @return Either the taken tuple if a tuple matching the template is present in the tuple space or null if it is not present
+	 * or if the operation was cancelled.
+	 */
+	public Tuple takeOnce(Tuple template, AtomicBoolean cancel) {
+		Tuple t_take = null;
+    	Iterator<Tuple> iterator = this.tuples.iterator();
+		while (iterator.hasNext() && (! cancel.get())) {
+			Tuple tuple = iterator.next();
+			if (tuple.matches(template)) {
+				if (! cancel.getAndSet(true)) {
+					// TODO : est il utile de cloner s'il s'agit d'une prise ?
+					t_take = tuple.deepclone();
+					iterator.remove();
+				}
+			}
+		}
+		return t_take;
+	}
+	
+	/**
+	 * @param template
+	 * @return
+	 */
 	public Collection<Tuple> takeMany(Tuple template) {
 		Collection<Tuple> t_take = new ArrayList<Tuple>();
 		Iterator<Tuple> iterator = this.tuples.iterator();
@@ -116,6 +190,9 @@ public class TupleSpace {
 		return t_take;
 	}
 	
+	/**
+	 * @param tuple
+	 */
 	public void writeOnce(Tuple tuple) {
 		this.tuples.add(tuple);
 	}

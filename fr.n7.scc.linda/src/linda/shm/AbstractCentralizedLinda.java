@@ -468,9 +468,34 @@ public abstract class AbstractCentralizedLinda implements Linda {
 		}
 	}
 	
-	protected abstract List<LindaCallback> triggersReader(Tuple tuple);
+	protected List<LindaCallback> triggersReader(Tuple tuple) {
+		Iterator<LindaCallback> iterator = this.readers.iterator();
+		List<LindaCallback> triggered = new ArrayList<LindaCallback>();
+		
+		// First collects all the reader callbacks
+		while (iterator.hasNext()) {
+			LindaCallback reader = iterator.next();
+			if (tuple.matches(reader.getTemplate())) {
+				triggered.add(reader);
+				iterator.remove();
+			}
+		}
+		return triggered;
+	}
 	
-	protected abstract LindaCallback triggersTaker(Tuple tuple);
+	protected LindaCallback triggersTaker(Tuple tuple) {
+		Iterator<LindaCallback> iterator = this.takers.iterator();
+		LindaCallback triggered = null;
+		LindaCallback taker = null;
+		while (iterator.hasNext() && (triggered == null)) {
+			taker = iterator.next();
+			if (tuple.matches(taker.getTemplate())) {
+				triggered = taker;
+				iterator.remove();
+			}
+		}
+		return triggered;
+	}
 
 	@Override
 	public void debug(String message) {
