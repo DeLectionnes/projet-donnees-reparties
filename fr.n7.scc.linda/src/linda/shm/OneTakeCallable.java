@@ -16,6 +16,11 @@ import linda.TupleSpace;
  */
 public class OneTakeCallable extends AbstractOneCallable {
 	
+	/**
+	 * @param _tupleSpacePart
+	 * @param _template
+	 * @param _cancelled
+	 */
 	public OneTakeCallable(TupleSpace _tupleSpacePart, Tuple _template, AtomicBoolean _cancelled) {
 		super(_tupleSpacePart, _template, _cancelled);
 	}

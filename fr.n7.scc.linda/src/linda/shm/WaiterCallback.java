@@ -57,6 +57,9 @@ public class WaiterCallback implements Callback {
 		return this.result;
 	}
 
+	/**
+	 * @return
+	 */
 	public Condition getCondition() {
 		return this.condition;
 	}

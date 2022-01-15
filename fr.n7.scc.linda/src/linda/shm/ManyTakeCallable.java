@@ -16,6 +16,10 @@ import linda.TupleSpace;
  */
 public class ManyTakeCallable extends AbstractManyCallable {
 	
+	/**
+	 * @param _tupleSpacePart
+	 * @param _template
+	 */
 	public ManyTakeCallable(TupleSpace _tupleSpacePart, Tuple _template) {
 		super(_tupleSpacePart, _template);
 	}

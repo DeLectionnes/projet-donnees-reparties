@@ -27,12 +27,24 @@ import linda.TupleSpace;
  */
 public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 	
+	/**
+	 * 
+	 */
 	private ExecutorService engine;
 	
+	/**
+	 * 
+	 */
 	private int size;
 	
+	/**
+	 * 
+	 */
 	private int nextSlot;
 	
+	/**
+	 * 
+	 */
 	private TupleSpace[] parts;
 
 	/**
@@ -49,6 +61,9 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 		this.engine = Executors.newFixedThreadPool(this.size);
 	}
 
+	/**
+	 *
+	 */
 	@Override
 	protected Tuple readOnce(Tuple template) {
 		CompletionService<Tuple> waiter = new ExecutorCompletionService<Tuple>(this.engine);
@@ -77,6 +92,9 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 		return t_read;
 	}
 
+	/**
+	 *
+	 */
 	@Override
 	protected Collection<Tuple> readMany(Tuple template) {
 		CompletionService<Collection<Tuple>> waiter = new ExecutorCompletionService<Collection<Tuple>>(this.engine);
@@ -102,12 +120,18 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 		return t_read;
 	}
 
+	/**
+	 *
+	 */
 	@Override
 	protected void writeOnce(Tuple tuple) {
 		this.parts[this.nextSlot].writeOnce(tuple);
 		this.nextSlot = (this.nextSlot + 1) % this.size;
 	}
 
+	/**
+	 *
+	 */
 	@Override
 	protected Tuple takeOnce(Tuple template) {
 		CompletionService<Tuple> waiter = new ExecutorCompletionService<Tuple>(this.engine);
@@ -136,6 +160,9 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 		return t_taken;
 	}
 
+	/**
+	 *
+	 */
 	@Override
 	protected Collection<Tuple> takeMany(Tuple template) {
 		CompletionService<Collection<Tuple>> waiter = new ExecutorCompletionService<Collection<Tuple>>(this.engine);
