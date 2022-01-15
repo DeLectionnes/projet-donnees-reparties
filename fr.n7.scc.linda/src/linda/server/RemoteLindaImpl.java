@@ -16,7 +16,7 @@ import linda.shm.AbstractCentralizedLinda;
 import linda.shm.CentralizedLinda;
 
 /**
- * @author cpantel
+ * @author bgros, cpantel, rmonvill
  *
  */
 public class RemoteLindaImpl extends UnicastRemoteObject implements RemoteLinda {

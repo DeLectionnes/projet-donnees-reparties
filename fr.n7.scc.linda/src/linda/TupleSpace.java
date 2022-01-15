@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * @author cpantel
+ * @author bgros, cpantel, rmonvill
  * 
  *
  */

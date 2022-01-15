@@ -18,7 +18,7 @@ import linda.Tuple;
 import linda.TupleSpace;
 
 /**
- * @author cpantel
+ * @author bgros, cpantel, rmonvill
  * 
  * We can use several parts for the tuple space that can be traversed concurrently (using Threads from a pool).
  * It should not be complex for readMany/takeMany.

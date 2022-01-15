@@ -14,7 +14,7 @@ import linda.Linda.eventMode;
 import linda.Linda.eventTiming;
 
 /**
- * @author cpantel
+ * @author bgros, cpantel, rmonvill
  *
  */
 public interface RemoteLinda extends Remote {

@@ -10,7 +10,7 @@ import linda.Callback;
 import linda.Tuple;
 
 /**
- * @author cpantel
+ * @author bgros, cpantel, rmonvill
  * Wait for the writing of a tuple matching a template when a read or take action could not succeed as an appropriate tuple was not in the tuple space.
  */
 public class WaiterCallback implements Callback {

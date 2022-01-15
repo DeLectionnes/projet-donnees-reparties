@@ -13,7 +13,7 @@ import linda.Tuple;
 import linda.TupleSpace;
 
 /**
- * @author cpantel
+ * @author bgros, cpantel, rmonvill
  *
  */
 public class CentralizedLinda extends AbstractCentralizedLinda {

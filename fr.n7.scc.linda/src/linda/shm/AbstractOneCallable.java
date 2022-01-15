@@ -7,7 +7,7 @@ import linda.Tuple;
 import linda.TupleSpace;
 
 /**
- * @author cpantel
+ * @author bgros, cpantel, rmonvill
  *
  */
 public abstract class AbstractOneCallable implements Callable<Tuple> {

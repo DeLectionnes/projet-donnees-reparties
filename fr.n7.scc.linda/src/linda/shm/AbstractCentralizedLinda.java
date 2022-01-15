@@ -12,7 +12,9 @@ import linda.Callback;
 import linda.Linda;
 import linda.Tuple;
 
-/** Shared memory implementation of Linda. */
+/** 
+ * @author bgros, cpantel, rmonvill
+ * Shared memory implementation of Linda. */
 /* TODO : Improve code sharing. */
 /* Maybe rely on callbacks for all actions */
 /* The following tests are currently running correctly:

@@ -22,7 +22,7 @@ import linda.Tuple;
 import linda.shm.AbstractCentralizedLinda;
 
 /**
- * @author cpantel
+ * @author bgros, cpantel, rmonvill
  *
  */
 public class LindaServer {
