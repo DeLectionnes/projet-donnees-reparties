@@ -82,10 +82,13 @@ public abstract class AbstractCentralizedLinda implements Linda {
 	 */
 	protected List<LindaCallback> takers;
 	
+	protected long startTime;
+	
     /**
      * 
      */
     public AbstractCentralizedLinda() {
+    	this.startTime = System.nanoTime();
     	this.monitor = new java.util.concurrent.locks.ReentrantLock();
     	
     	this.eventRegisterInside = false;
@@ -101,6 +104,18 @@ public abstract class AbstractCentralizedLinda implements Linda {
     	this.readers = new ArrayList<LindaCallback>();
     	this.takers = new ArrayList<LindaCallback>();
     }
+    
+    /**
+     * @return
+     */
+    public long getElapsedTime() {
+    	return (System.nanoTime() - this.startTime);
+    }
+    
+    /**
+     * 
+     */
+    public abstract void stop();
     
     /**
      * @return
@@ -137,7 +152,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
 	private void waitingToRegister(Tuple template) {
 		while (! this.canRegister()) {
 			try {
-				this.debug("Register sleeping: " + template);
+//				this.debug("Register sleeping: " + template);
 				this.eventRegisteringPossible.await();
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -173,7 +188,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
      * @return
      */
     private boolean canRead() {
-    	this.debug( "canRead" );
+//    	this.debug( "canRead" );
     	return ((! this.eventRegisterInside) && (! this.writerInside) && (! this.takerInside));
     }
     
@@ -190,7 +205,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
 	private void waitingToRead(Tuple template) {
 		while (! this.canRead()) {
 			try {
-				this.debug("Read sleeping: " + template);
+//				this.debug("Read sleeping: " + template);
 				this.readingPossible.await();
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -241,7 +256,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
 	@Override
 	public Tuple read(Tuple template) {
     	Tuple t_read = null;
-		this.debug("Entering read: " + template);
+//		this.debug("Entering read: " + template);
 		this.monitor.lock();
     	do {
     		this.waitingToRead(template);
@@ -255,7 +270,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
     		// TODO : Semble fonctionner, supprimer la boucle.
     		if (t_read == null) {
     			try {
-    				this.debug("Read sleeping: " + template);
+//    				this.debug("Read sleeping: " + template);
         			WaiterCallback waiter = new WaiterCallback(this.monitor);
         			this.readers.add(new LindaCallback( template, waiter));
         			waiter.getCondition().await();
@@ -269,7 +284,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
     	} while (t_read == null);
     	this.wakeAfterReading();
     	this.monitor.unlock();
-    	this.debug("Exiting read:" + template + " -> " + t_read);
+//    	this.debug("Exiting read:" + template + " -> " + t_read);
     	return t_read;
     }
   
@@ -278,7 +293,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
 	 */
 	@Override
     public Tuple tryRead(Tuple template) {
-		this.debug("Entering read: " + template);
+//		this.debug("Entering read: " + template);
 		this.monitor.lock();
 		this.waitingToRead(template);
 		numberReadersInside += 1;
@@ -286,7 +301,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
 		numberReadersInside -= 1;
     	this.wakeAfterReading();
     	this.monitor.unlock();
-    	this.debug("Exiting read:" + template);
+//    	this.debug("Exiting read:" + template);
     	return t_read;
     }
 	
@@ -295,7 +310,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
 	 */
 	@Override
 	public Collection<Tuple> readAll(Tuple template) {
-		this.debug("Entering read all: " + template);
+//		this.debug("Entering read all: " + template);
 		this.monitor.lock();
 		this.waitingToRead(template);
 		numberReadersInside += 1;
@@ -303,7 +318,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
 		numberReadersInside -= 1;
     	this.wakeAfterReading();
     	this.monitor.unlock();
-    	this.debug("Exiting read all:" + template);
+//    	this.debug("Exiting read all:" + template);
     	return t_read;
 	}
 
@@ -312,7 +327,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
      * @return
      */
     private boolean canWrite() {
-    	this.debug( "canWrite");
+//    	this.debug( "canWrite");
     	return ((! this.eventRegisterInside) && (this.numberReadersInside == 0) && (! this.takerInside) && (! this.writerInside));
     }
     
@@ -329,7 +344,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
     private void waitingToWrite(Tuple template) {
     	while (! (this.canWrite())) {
     		try {
-    			this.debug("Write sleeping: " + template);
+//    			this.debug("Write sleeping: " + template);
     			this.writingPossible.await();
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -370,7 +385,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
 	 */
 	@Override
     public void write(Tuple tuple) {
-		this.debug("Entering write: " + tuple);
+//		this.debug("Entering write: " + tuple);
 		this.monitor.lock();
 		waitingToWrite(tuple);
     	writerInside = true;
@@ -385,27 +400,27 @@ public abstract class AbstractCentralizedLinda implements Linda {
     	writerInside = false;
     	this.wakeAfterWriting();
     	this.monitor.unlock();
-    	this.debug("Execute triggered readers: " + tuple);
+//    	this.debug("Execute triggered readers: " + tuple);
 		// Then execute all the reader callbacks
 		for (LindaCallback reader : triggeredReaders) {
-			this.debug( "Calling a reader callback on " + tuple);
+//			this.debug( "Calling a reader callback on " + tuple);
 			reader.getCallback().call(tuple);
 		}
 
-    	this.debug("Execute triggered taker: " + tuple);
+//    	this.debug("Execute triggered taker: " + tuple);
 		if (trigerredTaker != null) {
-			this.debug( "Calling a taker callback on " + tuple);
+//			this.debug( "Calling a taker callback on " + tuple);
 			trigerredTaker.getCallback().call(tuple);
 		}
 
-    	this.debug("Exiting write:" + tuple);
+//    	this.debug("Exiting write:" + tuple);
     }
     
     /**
      * @return
      */
     private boolean canTake() {
-    	this.debug( "canTake");
+//    	this.debug( "canTake");
     	return ((! this.eventRegisterInside) && (this.numberReadersInside == 0) && (! this.takerInside) && (! this.writerInside));
     }
     
@@ -422,7 +437,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
 	private void waitingToTake(Tuple template) {
 		while (! this.canTake()) {
 			try {
-				this.debug("Take sleeping: " + template);
+//				this.debug("Take sleeping: " + template);
 				this.takingPossible.await();
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -470,7 +485,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
 	@Override
     public Tuple take(Tuple template) {
     	Tuple t_taken = null;
-		this.debug("Entering take: " + template);
+//		this.debug("Entering take: " + template);
     	this.monitor.lock();
     	do {
     		this.waitingToTake(template);
@@ -484,7 +499,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
     		// TODO : Semble fonctionner, supprimer la boucle.
     		if (t_taken == null) {
     			try {
-    				this.debug("Take sleeping: " + template);
+//    				this.debug("Take sleeping: " + template);
         			WaiterCallback waiter = new WaiterCallback(this.monitor);
         			this.readers.add(new LindaCallback( template, waiter));
         			waiter.getCondition().await();
@@ -498,7 +513,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
     	} while (t_taken == null);
     	this.wakeAfterTaking();
     	this.monitor.unlock();
-    	this.debug("Exiting take:" + template);
+//    	this.debug("Exiting take:" + template);
     	return t_taken;
     }
 
@@ -507,13 +522,13 @@ public abstract class AbstractCentralizedLinda implements Linda {
 	 */
 	@Override
     public Tuple tryTake(Tuple template) {
-		this.debug("Entering try take: " + template);
+//		this.debug("Entering try take: " + template);
     	this.monitor.lock();
     	this.waitingToTake(template);
     	Tuple t_take = this.takeOnce(template);
     	this.wakeAfterTaking();
     	this.monitor.unlock();
-    	this.debug("Exiting try take:" + template);
+//    	this.debug("Exiting try take:" + template);
     	return t_take;
     }
 
@@ -522,13 +537,13 @@ public abstract class AbstractCentralizedLinda implements Linda {
 	 */
 	@Override
 	public Collection<Tuple> takeAll(Tuple template) {
-		this.debug("Entering try take all: " + template);
+//		this.debug("Entering try take all: " + template);
     	this.monitor.lock();
     	this.waitingToTake(template);
     	Collection<Tuple> t_take = this.takeMany(template);
     	this.wakeAfterTaking();
     	this.monitor.unlock();
-    	this.debug("Exiting try take all:" + template);
+//    	this.debug("Exiting try take all:" + template);
     	return t_take;
 	}
 
@@ -541,7 +556,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
 		this.monitor.lock();
 		waitingToRegister(template);
 		this.eventRegisterInside = true;
-		this.debug("Registering a " + mode + " " + timing + " callback on " + template);
+//		this.debug("Registering a " + mode + " " + timing + " callback on " + template);
 		Collection<Tuple> readTuples = null;
 		Tuple takenTuple = null;
 		switch (mode) {
@@ -570,12 +585,12 @@ public abstract class AbstractCentralizedLinda implements Linda {
 		this.monitor.unlock();
 		if (readTuples != null) {
 			for (Tuple tuple : readTuples) {
-				this.debug( "Calling an immediate callback on " + tuple);
+//				this.debug( "Calling an immediate callback on " + tuple);
 				callback.call(tuple);
 			}
 		}
 		if (takenTuple != null) {
-			this.debug( "Calling an immediate callback on " + takenTuple);
+//			this.debug( "Calling an immediate callback on " + takenTuple);
 			callback.call(takenTuple);
 		}
 	}
@@ -622,7 +637,7 @@ public abstract class AbstractCentralizedLinda implements Linda {
 	 */
 	@Override
 	public void debug(String message) {
-		System.err.println(this.getThreadId() + " " + message + " " + this.getStatus());
+		System.err.println(this.getThreadId() + " at " + (System.nanoTime() - this.startTime) + " tells " + message + " when " + this.getStatus());
 	}
 
 }

@@ -100,4 +100,9 @@ public class CentralizedLinda extends AbstractCentralizedLinda {
 		return t_take;
 	}
 
+	@Override
+	public void stop() {
+		this.debug("Stopping");
+	}
+
 }

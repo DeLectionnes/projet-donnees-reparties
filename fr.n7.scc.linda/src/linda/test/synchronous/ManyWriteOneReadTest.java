@@ -9,7 +9,7 @@ public class ManyWriteOneReadTest {
     public static void main(String[] a) {
                 
         // final Linda linda = new linda.shm.CentralizedLinda();
-    	final Linda linda = new linda.shm.CentralizedConcurrentLinda(16);
+    	final Linda linda = new linda.shm.CentralizedConcurrentLinda();
         // final Linda linda = new linda.server.LindaClient("//localhost:4000/LindaServer");
         
     	for (int i = 0; i < N; i++ ) {

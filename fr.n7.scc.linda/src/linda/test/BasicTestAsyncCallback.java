@@ -19,7 +19,7 @@ public class BasicTestAsyncCallback {
 
     public static void main(String[] a) {
         // Linda linda = new linda.shm.CentralizedLinda();
-        Linda linda = new linda.shm.CentralizedConcurrentLinda(2);
+        Linda linda = new linda.shm.CentralizedConcurrentLinda();
         // Linda linda = new linda.server.LindaClient("//localhost:4000/LindaServer");
 
         Tuple motif = new Tuple(Integer.class, String.class);

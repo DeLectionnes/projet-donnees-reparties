@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import linda.Tuple;
@@ -35,7 +36,22 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 	/**
 	 * 
 	 */
-	private int size;
+	private final static int DEFAULT_THREAD_PER_PARTS = 16;
+	
+	/**
+	 * 
+	 */
+	private final static int DEFAULT_NUMBER_OF_PARTS = 16;
+	
+	/**
+	 * 
+	 */
+	private final int numberOfParts;
+	
+	/**
+	 * 
+	 */
+	private final int threadsPerPart;
 	
 	/**
 	 * 
@@ -46,19 +62,45 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 	 * 
 	 */
 	private TupleSpace[] parts;
-
+	
 	/**
 	 * 
 	 */
-	public CentralizedConcurrentLinda(int _size) {
+	public CentralizedConcurrentLinda() {
+		this( DEFAULT_NUMBER_OF_PARTS, DEFAULT_THREAD_PER_PARTS);
+	}
+
+	/**
+	 * @param _numberOfParts 
+	 * @param _threadsPerPart 
+	 * 
+	 */
+	public CentralizedConcurrentLinda(int _numberOfParts, int _threadsPerPart) {
 		super();
-		this.size = _size;
+		this.numberOfParts = _numberOfParts;
+		this.threadsPerPart = _threadsPerPart;
 		this.nextSlot = 0;
-		this.parts = new TupleSpace [this.size];
-		for (int i = 0; i < this.size; i++) {
+		this.parts = new TupleSpace [this.numberOfParts];
+		for (int i = 0; i < this.numberOfParts; i++) {
 			this.parts[i] = new TupleSpace();
 		}
-		this.engine = Executors.newFixedThreadPool(this.size);
+		this.engine = Executors.newFixedThreadPool(this.numberOfParts);
+	}
+	
+	/**
+	 *
+	 */
+	@Override
+	public void stop() {
+		try {
+			this.debug("Entering stop");
+			this.engine.shutdown();
+			this.engine.awaitTermination(1, TimeUnit.SECONDS);
+			this.debug("Exiting stop");
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -69,7 +111,7 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 		CompletionService<Tuple> waiter = new ExecutorCompletionService<Tuple>(this.engine);
 		Tuple t_read = null;
 		AtomicBoolean cancelled = new AtomicBoolean(false);
-		for (int i = 0; i < this.size; i++) {
+		for (int i = 0; i < this.numberOfParts; i++) {
 			waiter.submit(new OneReadCallable( this.parts[i], template, cancelled));
 		}
 		Future<Tuple> result;
@@ -77,7 +119,7 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 			int finished = 0;
 			result = waiter.take();
 			finished++;
-			while ((result.get() == null) && (finished < this.size)) {
+			while ((result.get() == null) && (finished < this.numberOfParts)) {
 				result = waiter.take();
 				finished++;
 			}
@@ -99,12 +141,12 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 	protected Collection<Tuple> readMany(Tuple template) {
 		CompletionService<Collection<Tuple>> waiter = new ExecutorCompletionService<Collection<Tuple>>(this.engine);
 		Collection<Tuple> t_read = new ArrayList<Tuple>();
-		for (int i = 0; i < this.size; i++) {
+		for (int i = 0; i < this.numberOfParts; i++) {
 			waiter.submit(new ManyReadCallable( this.parts[i], template));
 		}
 		Future<Collection<Tuple>> result;
 		try {
-			for (int i = 0; i < this.size; i++) {
+			for (int i = 0; i < this.numberOfParts; i++) {
 				result = waiter.take();
 				if (result.get() != null) {
 					t_read.addAll(result.get());
@@ -126,7 +168,7 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 	@Override
 	protected void writeOnce(Tuple tuple) {
 		this.parts[this.nextSlot].writeOnce(tuple);
-		this.nextSlot = (this.nextSlot + 1) % this.size;
+		this.nextSlot = (this.nextSlot + 1) % this.numberOfParts;
 	}
 
 	/**
@@ -137,7 +179,7 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 		CompletionService<Tuple> waiter = new ExecutorCompletionService<Tuple>(this.engine);
 		Tuple t_taken = null;
 		AtomicBoolean cancelled = new AtomicBoolean(false);
-		for (int i = 0; i < this.size; i++) {
+		for (int i = 0; i < this.numberOfParts; i++) {
 			waiter.submit(new OneTakeCallable( this.parts[i], template, cancelled));
 		}
 		Future<Tuple> result;
@@ -145,7 +187,7 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 			int finished = 0;
 			result = waiter.take();
 			finished++;
-			while ((result.get() == null) && (finished < this.size)) {
+			while ((result.get() == null) && (finished < this.numberOfParts)) {
 				result = waiter.take();
 				finished++;
 			}
@@ -167,12 +209,12 @@ public class CentralizedConcurrentLinda extends AbstractCentralizedLinda {
 	protected Collection<Tuple> takeMany(Tuple template) {
 		CompletionService<Collection<Tuple>> waiter = new ExecutorCompletionService<Collection<Tuple>>(this.engine);
 		Collection<Tuple> t_taken = new ArrayList<Tuple>();
-		for (int i = 0; i < this.size; i++) {
+		for (int i = 0; i < this.numberOfParts; i++) {
 			waiter.submit(new ManyTakeCallable( this.parts[i], template));
 		}
 		Future<Collection<Tuple>> result;
 		try {
-			for (int i = 0; i < this.size; i++) {
+			for (int i = 0; i < this.numberOfParts; i++) {
 				result = waiter.take();
 				if (result.get() != null) {
 					t_taken.addAll(result.get());
