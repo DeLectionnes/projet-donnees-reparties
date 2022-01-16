@@ -14,7 +14,9 @@ import linda.Callback;
 import linda.Linda;
 import linda.Tuple;
 
-/** Client part of a client/server implementation of Linda.
+/** 
+ * @author : bgros, cpantel, rmonvill
+ * Client part of a client/server implementation of Linda.
  * It implements the Linda interface and propagates everything to the server it is connected to.
  * */
 public class LindaClient implements Linda {

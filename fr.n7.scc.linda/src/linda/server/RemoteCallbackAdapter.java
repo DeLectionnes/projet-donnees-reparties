@@ -9,7 +9,7 @@ import linda.Callback;
 import linda.Tuple;
 
 /**
- * @author cpantel
+ * @author bgros, cpantel, rmonvill
  *
  */
 public class RemoteCallbackAdapter implements Callback {

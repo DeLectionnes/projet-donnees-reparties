@@ -12,7 +12,7 @@ import linda.Callback;
 import linda.Tuple;
 
 /**
- * @author cpantel
+ * @author bgros, cpantel, rmonvill
  *
  */
 public class RemoteCallbackImpl extends UnicastRemoteObject implements RemoteCallback {

@@ -13,11 +13,14 @@ import linda.Tuple;
 import linda.TupleSpace;
 
 /**
- * @author cpantel
+ * @author bgros, cpantel, rmonvill
  *
  */
 public class CentralizedLinda extends AbstractCentralizedLinda {
 	
+	/**
+	 * A single tuple space is used in this sequential (almost) version.
+	 */
 	protected TupleSpace tuples; 
 
 	/**
@@ -37,10 +40,17 @@ public class CentralizedLinda extends AbstractCentralizedLinda {
     	this.tuples = new TupleSpace(name);
 	}
 	
+	/**
+	 * @param name
+	 * @throws IOException
+	 */
 	public void store(String name) throws IOException {
 		this.tuples.store(name);
 	}
 	
+	/**
+	 *
+	 */
 	protected Tuple readOnce(Tuple template) {
     	Tuple t_read = null;
 		this.debug("Entering readOnce: " + template);
@@ -49,6 +59,9 @@ public class CentralizedLinda extends AbstractCentralizedLinda {
 		return t_read;
 	}
 	
+	/**
+	 *
+	 */
 	protected Collection<Tuple> readMany(Tuple template) {
     	Collection<Tuple> t_read = null;
 		this.debug("Entering readMany: " + template);
@@ -57,40 +70,17 @@ public class CentralizedLinda extends AbstractCentralizedLinda {
 		return t_read;
 	}
 	
-	protected List<LindaCallBack> triggersReader(Tuple tuple) {
-		Iterator<LindaCallBack> iterator = this.readers.iterator();
-		List<LindaCallBack> triggered = new ArrayList<LindaCallBack>();
-		
-		// First collects all the reader callbacks
-		while (iterator.hasNext()) {
-			LindaCallBack reader = iterator.next();
-			if (tuple.matches(reader.getTemplate())) {
-				triggered.add(reader);
-				iterator.remove();
-			}
-		}
-		return triggered;
-	}
-	
-	protected LindaCallBack triggersTaker(Tuple tuple) {
-		Iterator<LindaCallBack> iterator = this.takers.iterator();
-		LindaCallBack triggered = null;
-		LindaCallBack taker = null;
-		while (iterator.hasNext() && (triggered == null)) {
-			taker = iterator.next();
-			if (tuple.matches(taker.getTemplate())) {
-				triggered = taker;
-				iterator.remove();
-			}
-		}
-		return triggered;
-	}
-
+	/**
+	 *
+	 */
 	@Override
 	protected void writeOnce(Tuple tuple) {
 		this.tuples.writeOnce(tuple);
 	}
 	
+	/**
+	 *
+	 */
 	protected Tuple takeOnce(Tuple template) {
 		Tuple t_take = null;
 		this.debug("Entering takeOnce: " + template);
@@ -99,12 +89,20 @@ public class CentralizedLinda extends AbstractCentralizedLinda {
 		return t_take;
 	}
 	
+	/**
+	 *
+	 */
 	protected Collection<Tuple> takeMany(Tuple template) {
 		Collection<Tuple> t_take = null;
 		this.debug("Entering takeMany: " + template);
 		t_take = this.tuples.takeMany(template);
 		this.debug("Exiting takeMany: " + template + " " + t_take.size());
 		return t_take;
+	}
+
+	@Override
+	public void stop() {
+		this.debug("Stopping");
 	}
 
 }
