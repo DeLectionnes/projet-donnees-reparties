@@ -9,7 +9,7 @@ public class Main {
             System.err.println("linda.search.basic.Main search file.");
             return;
     	}
-        Linda linda = new linda.shm.CentralizedConcurrentLinda(16,4);
+        Linda linda = new linda.shm.CentralizedLinda(16,4);
         Manager manager = new Manager(linda, args[1], args[0]);
         Searcher searcher = new Searcher(linda);
         (new Thread(manager)).start();

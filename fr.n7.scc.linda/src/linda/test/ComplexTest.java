@@ -4,11 +4,11 @@ import linda.*;
 import linda.Linda.eventMode;
 import linda.Linda.eventTiming;
 
-public class CentralizedTestSimple {
+public class ComplexTest {
 	private static int i;
-	// final static Linda linda = new linda.shm.CentralizedLinda();
-	//final static Linda linda = new linda.shm.CentralizedConcurrentLinda();
-	 final static Linda linda = new linda.server.LindaClient("//basile-HP:4000/LindaServer");
+	// final static Linda linda = new linda.shm.CentralizedSequentialLinda();
+	//final static Linda linda = new linda.shm.CentralizedLinda();
+	 final static Linda linda = new linda.server.LindaClient("//localhost:4000/LindaServer");
 	
 	
 	private static class TestCallback implements Callback {

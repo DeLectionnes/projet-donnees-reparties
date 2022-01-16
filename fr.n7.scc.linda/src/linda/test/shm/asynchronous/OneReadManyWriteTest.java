@@ -1,10 +1,10 @@
-package linda.test.shm.synchronous;
-
-import java.util.Collection;
+package linda.test.shm.asynchronous;
 
 import linda.*;
+import linda.Linda.eventMode;
+import linda.Linda.eventTiming;
 
-public class ManyWriteOneFullReadTest {
+public class OneReadManyWriteTest {
 	
 	final static int N = 16;
 
@@ -13,14 +13,20 @@ public class ManyWriteOneFullReadTest {
         // final ExtendedLinda linda = new linda.shm.CentralizedSequentialLinda();
     	final ExtendedLinda linda = new linda.shm.CentralizedLinda();
         // final Linda linda = new linda.server.LindaClient("//localhost:4000/LindaServer");
+    	
+    	Callback action = new PrintCallback();
+    	linda.eventRegister( eventMode.TAKE, eventTiming.IMMEDIATE, new Tuple(4, 5), action);
+    	
+    	linda.eventRegister( eventMode.TAKE, eventTiming.IMMEDIATE, new Tuple(5, 4), action);
         
     	for (int i = 0; i < N; i++ ) {
     		for (int j = 0; j < N; j++) {
     			linda.write(new Tuple(i, j));
     		}
     	}
-    	Collection<Tuple> result = linda.readAll(new Tuple(Integer.class, Integer.class));
-        linda.debug( result.toString()  );
+    	
+    	linda.eventRegister( eventMode.TAKE, eventTiming.IMMEDIATE, new Tuple(5, 5), action);
+
         linda.stop();
     }
 }

@@ -13,8 +13,8 @@ public class CribleEratosthene {
 	static int nbThreads;
 	static double sqrt;
 	static List<Integer> resultat = new ArrayList<Integer>();
-	// final static Linda linda = new linda.shm.CentralizedLinda();
-	final static Linda linda = new linda.shm.CentralizedConcurrentLinda( 16, 4 );
+	// final static Linda linda = new linda.shm.CentralizedSequentialLinda();
+	final static Linda linda = new linda.shm.CentralizedLinda( 16, 4 );
 	// final static Linda linda = new linda.server.LindaClient("//localhost:4000/MonServeur");
 	public static void main(String args[]) throws InterruptedException {
 		System.err.close();

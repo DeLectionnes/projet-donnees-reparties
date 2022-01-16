@@ -21,7 +21,7 @@ import linda.Tuple;
 /* The following tests are currently running correctly:
  * - BasicTest1
  * - BasicTest2
- * - CentralizedTestSimple (I don't know what the expected result is, but no errors are signaled).
+ * - ComplexTest (I don't know what the expected result is, but no errors are signaled).
  * - BasicTestAsyncCallback
  * - BasicTestCallback
  */
@@ -134,7 +134,7 @@ public abstract class AbstractCentralizedLinda implements ExtendedLinda {
      * @return
      */
     private boolean canRegister() {
-    	this.debug( "canRegister" );
+//    	this.debug( "canRegister" );
     	return ((! this.eventRegisterInside) && (this.numberReadersInside == 0) && (! this.writerInside) && (! this.takerInside));
     }
     

@@ -9,7 +9,7 @@ public class ManyWriteManyTakeTest {
 
     public static void main(String[] a) {
                 
-        final ExtendedLinda sequentialLinda = new linda.shm.CentralizedLinda();
+        final ExtendedLinda sequentialLinda = new linda.shm.CentralizedSequentialLinda();
         // final Linda linda = new linda.server.LindaClient("//localhost:4000/LindaServer");
     	sequentialLinda.debug("Start writing");
     	for (int i = 0; i < N; i++ ) {
@@ -26,7 +26,7 @@ public class ManyWriteManyTakeTest {
     	}
     	sequentialLinda.debug("Finished");
     	sequentialLinda.stop();
-    	final ExtendedLinda concurrentlinda = new linda.shm.CentralizedConcurrentLinda(16,16);
+    	final ExtendedLinda concurrentlinda = new linda.shm.CentralizedLinda(16,16);
     	concurrentlinda.debug("Start writing");
     	for (int i = 0; i < N; i++ ) {
     		for (int j = 0; j < N; j++) {

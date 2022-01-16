@@ -196,7 +196,7 @@ public class LindaClient implements ExtendedLinda {
 	 */
 	@Override
 	public void stop() {
-		this.debug("Stopping");
+//		this.debug("Stopping");
 	}
     
     // TO BE COMPLETED
@@ -213,7 +213,7 @@ public class LindaClient implements ExtendedLinda {
 				serverURI = "rmi://" + InetAddress.getLocalHost().getHostName() + ":" + port + "/LindaServer";
 			}
 			LindaClient me = new LindaClient( serverURI );
-			me.debug("Initialisation completed.");
+//			me.debug("Initialisation completed.");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

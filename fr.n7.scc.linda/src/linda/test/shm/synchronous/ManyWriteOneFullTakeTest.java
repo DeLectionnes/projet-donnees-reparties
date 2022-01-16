@@ -10,8 +10,8 @@ public class ManyWriteOneFullTakeTest {
 
     public static void main(String[] a) {
                 
-        // final ExtendedLinda linda = new linda.shm.CentralizedLinda();
-    	final ExtendedLinda linda = new linda.shm.CentralizedConcurrentLinda();
+        // final ExtendedLinda linda = new linda.shm.CentralizedSequentialLinda();
+    	final ExtendedLinda linda = new linda.shm.CentralizedLinda();
         // final Linda linda = new linda.server.LindaClient("//localhost:4000/LindaServer");
         
     	for (int i = 0; i < N; i++ ) {

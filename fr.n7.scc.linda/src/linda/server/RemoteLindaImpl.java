@@ -14,6 +14,7 @@ import linda.Linda.eventMode;
 import linda.Linda.eventTiming;
 import linda.shm.AbstractCentralizedLinda;
 import linda.shm.CentralizedLinda;
+import linda.shm.CentralizedSequentialLinda;
 
 /**
  * @author bgros, cpantel, rmonvill
@@ -27,6 +28,7 @@ public class RemoteLindaImpl extends UnicastRemoteObject implements RemoteLinda 
 	 * @throws RemoteException
 	 */
 	public RemoteLindaImpl() throws RemoteException {
+		// this.local = new CentralizedSequentialLinda();
 		this.local = new CentralizedLinda();
 	}
 
@@ -36,7 +38,7 @@ public class RemoteLindaImpl extends UnicastRemoteObject implements RemoteLinda 
 	 */
 	public RemoteLindaImpl(int port) throws RemoteException {
 		super(port);
-		this.local = new CentralizedLinda();
+		this.local = new CentralizedSequentialLinda();
 	}
 
 	/**

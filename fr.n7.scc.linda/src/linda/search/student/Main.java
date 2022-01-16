@@ -16,7 +16,7 @@ public class Main {
     	}
     	
     	
-    	linda = new linda.shm.CentralizedConcurrentLinda(16,4);
+    	linda = new linda.shm.CentralizedLinda(16,4);
     	
     	for(int chercheur = 0; chercheur < Integer.parseInt(args[1]); chercheur ++) {
         	Main.startSearcher();
