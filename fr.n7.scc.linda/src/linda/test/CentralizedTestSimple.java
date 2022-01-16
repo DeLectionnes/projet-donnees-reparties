@@ -7,8 +7,8 @@ import linda.Linda.eventTiming;
 public class CentralizedTestSimple {
 	private static int i;
 	// final static Linda linda = new linda.shm.CentralizedLinda();
-	final static Linda linda = new linda.shm.CentralizedConcurrentLinda();
-	// final static Linda linda = new linda.server.LindaClient("//localhost:4000/LindaServer");
+	//final static Linda linda = new linda.shm.CentralizedConcurrentLinda();
+	 final static Linda linda = new linda.server.LindaClient("//basile-HP:4000/LindaServer");
 	
 	
 	private static class TestCallback implements Callback {
@@ -76,7 +76,12 @@ public class CentralizedTestSimple {
 					Tuple voulu = new Tuple(i,i-1, 'a');
 					Tuple expected = new Tuple(Integer.class, i-1, Character.class);
 					linda.write(voulu);
-					assert(linda.tryTake(expected) == null);
+					try {
+				        Thread.sleep(100);
+				    } catch (InterruptedException e) {
+				        e.printStackTrace();
+				    }
+					assert(linda.tryTake(expected).matches(voulu));
 				}
 			}.start();
 		}
@@ -87,7 +92,7 @@ public class CentralizedTestSimple {
 			new Thread() {
 				public void run() {
 					Tuple voulu = new Tuple(i,i-1, 'b');
-					Tuple expected = new Tuple(i, Integer.class, Character.class);
+					Tuple expected = new Tuple(i, Integer.class, 'b');
 					linda.eventRegister(eventMode.READ, eventTiming.FUTURE, expected, new AsynchronousCallback(new TestCallback(voulu)));
 					try {
 				        Thread.sleep(500);
@@ -239,11 +244,11 @@ public class CentralizedTestSimple {
 	    }
 		
 		for (i=0; i< 30; i++) {
-			linda.write(new Tuple(i, i+1, 'b'));
+			linda.write(new Tuple(i, i-1, 'b'));
 		}
 		
 		for (i=0; i< 30; i++) {
-			assert (linda.tryTake(new Tuple(i, Integer.class, Character.class)).matches(new Tuple(i, i+1, 'a')));
+			assert (linda.tryTake(new Tuple(i, i+1, Character.class)).matches(new Tuple(i, i+1, 'a')));
 		}
 		
 		try {

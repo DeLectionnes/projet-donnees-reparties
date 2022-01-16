@@ -9,8 +9,9 @@ public class Main {
 	 */
 	static Linda linda;
     public static void main(String args[]) {
+    	System.err.close();
     	if (args.length < 3) {
-            System.err.println("linda.search.basic.Main file numer_of_searchers search1 search2 ...");
+            System.err.println("linda.search.basic.Main file number_of_searchers search1 search2 ...");
             return;
     	}
     	
