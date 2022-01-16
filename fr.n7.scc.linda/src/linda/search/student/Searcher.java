@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public class Searcher implements Runnable {
 
-    private Linda linda;
+    private final Linda linda;
 
     public Searcher(Linda linda) {
         this.linda = linda;
@@ -21,7 +21,9 @@ public class Searcher implements Runnable {
         Tuple tv;
         System.out.println("Looking for: " + req);
         linda.eventRegister(Linda.eventMode.READ, Linda.eventTiming.IMMEDIATE, new Tuple(Code.Signal, SignalID.SearchEnd, reqUUID), new CbSearcherDone());
+        
         while ((tv = linda.tryTake(new Tuple(Code.Value,  String.class, reqUUID))) != null) {
+        	System.err.println("Dans la boucle");
             String val = (String) tv.get(1);
             int dist = getLevenshteinDistance(req, val);
             if (dist < 10) { // arbitrary
