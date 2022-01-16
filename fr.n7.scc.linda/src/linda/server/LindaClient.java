@@ -11,6 +11,7 @@ import java.util.Collection;
 
 import linda.server.LindaServer;
 import linda.Callback;
+import linda.ExtendedLinda;
 import linda.Linda;
 import linda.Tuple;
 
@@ -19,14 +20,23 @@ import linda.Tuple;
  * Client part of a client/server implementation of Linda.
  * It implements the Linda interface and propagates everything to the server it is connected to.
  * */
-public class LindaClient implements Linda {
+public class LindaClient implements ExtendedLinda {
 	
+	/**
+	 * 
+	 */
 	private RemoteLinda server;
+	
+	/**
+	 * 
+	 */
+	protected long startTime;
 	
     /** Initializes the Linda implementation.
      *  @param serverURI the URI of the server, e.g. "rmi://localhost:4000/LindaServer" or "//localhost:4000/LindaServer".
      */
     public LindaClient(String serverURI) {
+    	this.startTime = System.nanoTime();
     	try {
     		this.debug( "Connecting to remote Linda server at URL: " + serverURI);
     		Remote proxy = Naming.lookup(serverURI);
@@ -172,6 +182,21 @@ public class LindaClient implements Linda {
 	@Override
 	public void debug(String message) {
 		System.err.println(this.getThreadId() + " " + message);
+	}
+	
+    /**
+     * @return
+     */
+    public long getElapsedTime() {
+    	return (System.nanoTime() - this.startTime);
+    }
+    
+	/**
+	 *
+	 */
+	@Override
+	public void stop() {
+		this.debug("Stopping");
 	}
     
     // TO BE COMPLETED

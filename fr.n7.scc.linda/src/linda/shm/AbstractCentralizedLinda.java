@@ -83,6 +83,9 @@ public abstract class AbstractCentralizedLinda implements ExtendedLinda {
 	 */
 	protected List<LindaCallback> takers;
 	
+	/**
+	 * 
+	 */
 	protected long startTime;
 	
     /**
