@@ -9,6 +9,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import linda.Callback;
+import linda.ExtendedLinda;
 import linda.Linda;
 import linda.Tuple;
 
@@ -24,7 +25,7 @@ import linda.Tuple;
  * - BasicTestAsyncCallback
  * - BasicTestCallback
  */
-public abstract class AbstractCentralizedLinda implements Linda {
+public abstract class AbstractCentralizedLinda implements ExtendedLinda {
 	
 	/**
 	 * Is an event being registered ?
@@ -111,11 +112,6 @@ public abstract class AbstractCentralizedLinda implements Linda {
     public long getElapsedTime() {
     	return (System.nanoTime() - this.startTime);
     }
-    
-    /**
-     * 
-     */
-    public abstract void stop();
     
     /**
      * @return

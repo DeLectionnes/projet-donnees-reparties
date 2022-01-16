@@ -53,9 +53,9 @@ public class CentralizedLinda extends AbstractCentralizedLinda {
 	 */
 	protected Tuple readOnce(Tuple template) {
     	Tuple t_read = null;
-		this.debug("Entering readOnce: " + template);
+//		this.debug("Entering readOnce: " + template);
     	t_read = this.tuples.readOnce(template);
-		this.debug("Exiting readOnce: " + template + " " + t_read);
+//		this.debug("Exiting readOnce: " + template + " " + t_read);
 		return t_read;
 	}
 	
@@ -64,9 +64,9 @@ public class CentralizedLinda extends AbstractCentralizedLinda {
 	 */
 	protected Collection<Tuple> readMany(Tuple template) {
     	Collection<Tuple> t_read = null;
-		this.debug("Entering readMany: " + template);
+//		this.debug("Entering readMany: " + template);
     	t_read = this.tuples.readMany(template);
-		this.debug("Exiting readMany: " + template + " " + t_read);
+//		this.debug("Exiting readMany: " + template + " " + t_read);
 		return t_read;
 	}
 	
@@ -83,9 +83,9 @@ public class CentralizedLinda extends AbstractCentralizedLinda {
 	 */
 	protected Tuple takeOnce(Tuple template) {
 		Tuple t_take = null;
-		this.debug("Entering takeOnce: " + template);
+//		this.debug("Entering takeOnce: " + template);
 		t_take = this.tuples.takeOnce(template);
-		this.debug("Exiting takeOnce: " + template + " " + t_take);
+//		this.debug("Exiting takeOnce: " + template + " " + t_take);
 		return t_take;
 	}
 	
@@ -94,9 +94,9 @@ public class CentralizedLinda extends AbstractCentralizedLinda {
 	 */
 	protected Collection<Tuple> takeMany(Tuple template) {
 		Collection<Tuple> t_take = null;
-		this.debug("Entering takeMany: " + template);
+//		this.debug("Entering takeMany: " + template);
 		t_take = this.tuples.takeMany(template);
-		this.debug("Exiting takeMany: " + template + " " + t_take.size());
+//		this.debug("Exiting takeMany: " + template + " " + t_take.size());
 		return t_take;
 	}
 
