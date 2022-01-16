@@ -1,4 +1,4 @@
-package linda.test.synchronous;
+package linda.test.shm.synchronous;
 
 import linda.*;
 import linda.shm.AbstractCentralizedLinda;
@@ -20,7 +20,7 @@ public class ManyWriteManyReadTest {
     	sequentialLinda.debug("Start reading");
     	for (int i = 0; i < N; i++ ) {
     		for (int j = 0; j < N; j++) {
-    	    	Tuple result = sequentialLinda.read(new Tuple(i, j));
+    	    	Tuple result = sequentialLinda.take(new Tuple(i, j));
 //    	        linda.debug( result.toString()  );
     	    }
     	}
@@ -36,7 +36,7 @@ public class ManyWriteManyReadTest {
     	concurrentlinda.debug("Start reading");
     	for (int i = 0; i < N; i++ ) {
     		for (int j = 0; j < N; j++) {
-    	    	Tuple result = concurrentlinda.read(new Tuple(i, j));
+    	    	Tuple result = concurrentlinda.take(new Tuple(i, j));
 //    	        linda.debug( result.toString()  );
     	    }
     	}

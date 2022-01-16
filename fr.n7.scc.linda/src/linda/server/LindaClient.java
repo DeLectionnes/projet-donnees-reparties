@@ -30,9 +30,10 @@ public class LindaClient implements Linda {
     	try {
     		this.debug( "Connecting to remote Linda server at URL: " + serverURI);
     		Remote proxy = Naming.lookup(serverURI);
-    		for (Class<?> c : proxy.getClass().getInterfaces()) {
-    			this.debug("Proxy : " + c.getName());
-    		}
+			/*
+			 * for (Class<?> c : proxy.getClass().getInterfaces()) { this.debug("Proxy : " +
+			 * c.getName()); }
+			 */
 			this.server = (RemoteLinda) proxy;
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
@@ -49,9 +50,9 @@ public class LindaClient implements Linda {
 	@Override
 	public void write(Tuple tuple) {
 		try {
-			this.debug("Entering write: " + tuple);
+//			this.debug("Entering write: " + tuple);
 			this.server.write(tuple);
-	    	this.debug("Exiting write:" + tuple);
+//	    	this.debug("Exiting write:" + tuple);
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -61,9 +62,9 @@ public class LindaClient implements Linda {
 	@Override
 	public Tuple take(Tuple template) {
 		try {
-			this.debug("Entering take: " + template);
+//			this.debug("Entering take: " + template);
 			Tuple t_taken = this.server.take(template);
-			this.debug("Exiting take: " + template + " -> " + t_taken);
+//			this.debug("Exiting take: " + template + " -> " + t_taken);
 			return t_taken;
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
@@ -75,9 +76,9 @@ public class LindaClient implements Linda {
 	@Override
 	public Tuple read(Tuple template) {
 		try {
-			this.debug("Entering take: " + template);
+//			this.debug("Entering take: " + template);
 			Tuple t_read = this.server.read(template);
-			this.debug("Exiting read:" + template + " -> " + t_read);
+//			this.debug("Exiting read:" + template + " -> " + t_read);
 			return t_read;
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
@@ -89,9 +90,9 @@ public class LindaClient implements Linda {
 	@Override
 	public Tuple tryTake(Tuple template) {
 		try {
-			this.debug("Entering tryTake: " + template);
+//			this.debug("Entering tryTake: " + template);
 			Tuple t_taken = this.server.tryTake(template);
-			this.debug("Exiting tryTake: " + template + " -> " + t_taken);
+//			this.debug("Exiting tryTake: " + template + " -> " + t_taken);
 			return t_taken;
 		} catch (RemoteException e) {
 			// As this is an asynchronous take, we decided to catch and hide the exception
@@ -104,9 +105,9 @@ public class LindaClient implements Linda {
 	@Override
 	public Tuple tryRead(Tuple template) {
 		try {
-			this.debug("Entering tryRead: " + template);
+//			this.debug("Entering tryRead: " + template);
 			Tuple t_read = this.server.tryRead(template);
-			this.debug("Exiting tryRead: " + template + " -> " + t_read);
+//			this.debug("Exiting tryRead: " + template + " -> " + t_read);
 			return t_read;
 		} catch (RemoteException e) {
 			// As this is an asynchronous read, we decided to catch and hide the exception
@@ -119,9 +120,9 @@ public class LindaClient implements Linda {
 	@Override
 	public Collection<Tuple> takeAll(Tuple template) {
 		try {
-			this.debug("Entering takeAll: " + template);
+//			this.debug("Entering takeAll: " + template);
 			Collection<Tuple> t_taken = this.server.takeAll(template);
-			this.debug("Exiting takeAll: " + template + " -> " + t_taken);
+//			this.debug("Exiting takeAll: " + template + " -> " + t_taken);
 			return t_taken;
 		} catch (RemoteException e) {
 			// As this is an asynchronous take, we decided to catch and hide the exception
@@ -134,9 +135,9 @@ public class LindaClient implements Linda {
 	@Override
 	public Collection<Tuple> readAll(Tuple template) {
 		try {
-			this.debug("Entering readAll: " + template);
+//			this.debug("Entering readAll: " + template);
 			Collection<Tuple> t_read = this.server.readAll(template);
-			this.debug("Exiting readAll: " + template + " -> " + t_read);
+//			this.debug("Exiting readAll: " + template + " -> " + t_read);
 			return t_read;			
 		} catch (RemoteException e) {
 			// As this is an asynchronous read, we decided to catch and hide the exception
@@ -155,7 +156,7 @@ public class LindaClient implements Linda {
 	public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) {
 		RemoteCallback proxy;
 		try {
-			this.debug("Registering a " + mode + " " + timing + " callback on " + template);
+//			this.debug("Registering a " + mode + " " + timing + " callback on " + template);
 			proxy = new RemoteCallbackImpl( callback);
 			this.server.eventRegister(mode, timing, template, proxy);
 		} catch (RemoteException e) {

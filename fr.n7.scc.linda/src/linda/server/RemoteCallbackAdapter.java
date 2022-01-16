@@ -23,7 +23,7 @@ public class RemoteCallbackAdapter implements Callback {
 	 * 
 	 */
 	public RemoteCallbackAdapter(RemoteCallback _proxy) {
-		this.debug("Creating a remote Callback for: " + _proxy);
+//		this.debug("Creating a remote Callback for: " + _proxy);
 		this.proxy = _proxy;
 	}
 	
@@ -44,9 +44,9 @@ public class RemoteCallbackAdapter implements Callback {
 	@Override
 	public void call(Tuple tuple) {
 		try {
-			this.debug("Entering remote Callback: " + tuple);
+//			this.debug("Entering remote Callback: " + tuple);
 			this.proxy.call(tuple);
-			this.debug("Exiting remote Callback: " + tuple);
+//			this.debug("Exiting remote Callback: " + tuple);
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
